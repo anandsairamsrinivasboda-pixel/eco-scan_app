@@ -70,6 +70,15 @@ def calculate_impact(products, environmental_data):
         "weight_unit": "Weight_unit",
     })
 
+    # vision.py returns both the wording printed on the receipt (item) and
+    # the verified canonical CSV category (match). Prefer that verified match
+    # for calculations. If it is empty, keep the receipt wording so the
+    # matching step below can report the food as unavailable.
+    if "match" in items.columns:
+        suggested_match = items["match"].astype("string").str.strip()
+        has_match = suggested_match.notna() & suggested_match.ne("")
+        items.loc[has_match, "Product"] = suggested_match[has_match]
+
     # Rename your CSV columns to the names used in the calculations.
     env = env.rename(columns={
         "food": "Product",
@@ -117,6 +126,14 @@ def calculate_impact(products, environmental_data):
 
     if (items["Quantity"] < 0).any():
         raise ValueError("Food quantities cannot be negative.")
+
+    missing_units = (
+        items["Unit"].isna()
+        | items["Unit"].astype(str).str.strip().eq("")
+    )
+    if missing_units.any():
+        foods = items.loc[missing_units, "Product"].tolist()
+        raise ValueError("A quantity unit is missing for: " + ", ".join(foods))
 
     items["Unit_key"] = (
         items["Unit"].astype(str).str.strip().str.casefold()
