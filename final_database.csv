@@ -1,0 +1,197 @@
+food,land_m2_per_kg,water_used,carbon_footprint
+Apple,0.63,260,0.43
+Banana,1.93,130,0.86
+Barley,1.11,210,1.18
+Beef (beef herd),326.21,1001,99.48
+Beef (dairy herd),43.24,1001,33.3
+Beet Sugar,1.83,329,1.81
+Berries & Grapes,2.41,174,1.53
+Brassicas,0.55,99,0.51
+Cane Sugar,2.04,559,3.2
+Tapioca,1.81,13,1.32
+Cheese,87.79,796,23.88
+Citrus Fruit,0.86,159,0.39
+Coffee,21.62,772,28.53
+Dark Chocolate,68.96,391,46.65
+Eggs,6.27,673,4.67
+Fish (farmed),0,7800,13.63
+Groundnuts,9.11,448,3.23
+Lamb & Mutton,369.81,598,39.72
+Maize,2.94,275,1.7
+Milk,8.95,158,3.15
+Nuts,12.96,2047,0.43
+Oatmeal,7.6,418,2.48
+Onions & Leeks,0.39,153,0.5
+Other Fruit,0.89,240,1.05
+Other Pulses,15.57,875,1.79
+Other Vegetables,0.38,128,0.53
+Peas,7.46,526,0.98
+Pig Meat,17.36,1081,12.31
+Potato,0.88,96,0.46
+Poultry Meat,12.22,780,9.87
+Prawns (farmed),0,2100,26.87
+Rice,2.8,685,4.45
+Root Vegetables,0.33,59,0.43
+Soy milk,0.66,20.6,0.98
+Tofu,3.52,127,3.16
+Tomato,0.8,106,2.09
+Wheat & Rye,3.85,549,1.57
+Wine,1.78,262,1.79
+Albacore tuna,0,0,9.38
+Apricot,0.89,594,1.45
+Atlantic herring,0,0,2.68
+Atlantic mackerel,0,0,2.62
+Beetroot,0.33,89,0.408
+Black pepper,3.85,1071,9.4
+Bluefin tuna,0,0,4.98
+Brown crab,0,0,33
+Carrot,0.33,89,0.396
+Cauliflower,0.55,96,0.721
+Cherry,0.89,643,1.74
+Chicory (witloof / endive),0.38,105,0.861
+Clementine,0.86,270,1.3
+Cod family (Gadidae),0,0,12
+Common sole,0,0,7.48
+Duck,12.22,780,8.06
+Durum wheat,3.85,549,1.23
+European anchovy,0,0,2.51
+Faba bean,15.57,701,0.858
+French Beans,0.38,242,0.447
+Goat meat,369.81,336,41.3
+Goat milk,8.95,158,1.52
+Grapefruit,0.86,139,0.926
+Great scallop,0,0,9.89
+Hemp seed (grain),10,429,2.91
+Kiwi,0.89,206,1
+Lettuce,0.38,105,0.868
+Lobster,0,0,41.6
+Lupine,15.57,875,1.1
+Muskmelon,0.89,88,0.979
+Mussels,0,0,5.33
+Oats (grain),7.6,309,0.953
+Peach,0.89,327,0.591
+Pear,0.89,277,0.387
+Pineapple,0.89,40,1.36
+Quinoa,6.57,570,7.09
+Rabbit,7.67,780,5.78
+Rapeseed,3.1,567,1.25
+Saithe (pollock),0,0,8.29
+Salmon (farmed),0,540,5.55
+Sardine (European pilchard),0,0,2.28
+Sea bass / sea bream (farmed),0,480,12.3
+Seaweed (Laminaria),0,0,0.53
+Sheep milk,8.95,158,2.18
+Skipjack tuna,0,0,4.95
+Sorghum grain,2.94,190,0.427
+Soybean,15.57,107,1.25
+Strawberry,2.41,146,0.533
+Sugar beet (roots),0.13,51,0.408
+Sunflower seed,4.2,349,2.91
+Triticale,3.85,549,1.57
+Trout,0,17200,5.68
+Turkey,12.22,780,4.56
+Veal,43.24,1001,22.09
+Walnut,12.96,2113,4.11
+Yellowfin tuna,0,0,4.98
+Zucchini,0.38,108,0.498
+Spinach,0.7327,174,0.423
+Fenugreek Leaves,2.2222,not available,not available
+Mustard Greens,0.1429,not available,0.32
+Amaranth Leaves,1,not available,0.507
+Coriander Leaves,4.0161,not available,1.03
+Mint Leaves,5,not available,0.735
+Curry Leaves,0.5,not available,not available
+Dill Leaves,0.9349,not available,0.879
+Sorrel Leaves,not available,not available,not available
+Colocasia Leaves,not available,not available,not available
+Onion,0.6206,153,0.421
+Garlic,1.845,251,0.383
+Ginger,2.0305,132,0.494
+Radish,0.6962,not available,0.384
+Sweet Potato,0.9743,58,0.334
+Taro Root,1.1111,18,0.69
+Elephant Foot Yam,0.2252,not available,not available
+Bottle Gourd,0.5662,not available,not available
+Bitter Gourd,0.9789,98.5,not available
+Ridge Gourd,0.6897,not available,not available
+Sponge Gourd,0.6849,not available,not available
+Snake Gourd,0.5556,not available,not available
+Pointed Gourd,0.7692,not available,not available
+Ivy Gourd,0.3724,not available,not available
+Apple Gourd,1,not available,not available
+Ash Gourd,0.3077,not available,not available
+Pumpkin,0.4808,108,0.639
+Cucumber,0.6342,147,0.512
+Spine Gourd,1.8182,not available,not available
+Okra,0.8399,101,0.47
+Green Peas,1.1217,213,0.702
+Cluster Beans,1.6667,548.7,not available
+Hyacinth Beans,1.1111,not available,not available
+Drumstick,0.3259,not available,not available
+Cowpeas,2,not available,not available
+Broad Beans,0.5714,not available,0.858
+Winged Beans,0.9091,not available,not available
+Eggplant,0.5244,128,0.472
+Green Chili,0.8299,139,0.715
+Capsicum,1.7964,139,0.715
+Cabbage,0.4425,99,0.762
+Broccoli,0.625,96,0.951
+Kohlrabi,0.4444,99,0.494
+Turnip,0.2857,89,0.396
+Plantain,0.1753,33,0.76
+Raw Papaya,not available,not available,not available
+Raw Mango,not available,not available,not available
+Jackfruit (Unripe),not available,not available,not available
+Lemon,0.5,210,0.764
+Mushroom,not available,not available,0.27
+Spring Onion,not available,95,0.739
+Sweet Corn,0.9683,245,0.63
+Baby Corn,not available,not available,not available
+Lotus Root,not available,not available,0.41
+Banana Stem,not available,not available,not available
+Banana Flower,not available,not available,not available
+Indian Hog Plum,not available,not available,not available
+Fiddlehead Fern,not available,not available,not available
+Water Spinach,0.1181,not available,0.414
+Red Cabbage,0.6841,99,0.905
+Celery,1,139.9,0.715
+Leek,0.2857,not available,0.611
+Mango,1.3651,486,0.728
+Papaya,0.2359,61,0.926
+Pomegranate,0.9733,416.59,0.499
+Guava,0.7306,486,1.19
+Coconut,not available,18,2.42
+Orange,0.3333,159,0.678
+Sweet Lime,0.8621,not available,not available
+Watermelon,0.4144,88,0.68
+Bael,0.3666,not available,not available
+Ice Apple,not available,not available,not available
+Java Plum,1.5385,not available,not available
+Litchi,1.4359,not available,0.554
+Jackfruit (Ripe),0.2857,not available,not available
+Grapes,0.4603,184,0.51
+Indian Gooseberry,0.849,not available,not available
+Sapodilla,1.0149,not available,not available
+Cape Gooseberry,6.25,not available,1.63
+Mulberry,1.4706,not available,0.28
+Star Fruit,0.5538,not available,0.554
+Bilimbi,1.2821,not available,not available
+Phalsa / Indian Sherbet Berry,1.4409,not available,not available
+Kaffir Lime / Gondhoraj Lemon,not available,not available,not available
+Pomelo,not available,139,0.33
+Tamarind,not available,not available,0.528
+Elephant Apple,not available,not available,not available
+Karonda,0.8889,not available,not available
+Custard Apple,1.3333,not available,not available
+Bullock's Heart,not available,not available,not available
+Fig,3.2727,1823,0.611
+Date,1.1786,1348,0.5
+Plum,3.0263,610,1.03
+Water Chestnut,not available,not available,not available
+Lotus Seed Pod / Fox Nut Fruit,not available,not available,not available
+Jujube,0.724,not available,not available
+Monstera Deliciosa,not available,not available,not available
+Cashew Apple,not available,155,not available
+Dragon Fruit,0.4599,not available,not available
+Avocado,1.1999,1132,1.55
+Passion Fruit,1.5323,not available,0.938
