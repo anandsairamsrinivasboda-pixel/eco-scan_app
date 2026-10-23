@@ -9,7 +9,7 @@ from streamlit_lottie import st_lottie
 # ---------------------------------------------------------
 st.set_page_config(
     page_title="EcoScan - Environmental Footprint",
-    page_icon="🌱",
+    page_icon="download.jpg",
     layout="wide"
 )
 
