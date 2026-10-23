@@ -95,42 +95,42 @@ Walnut,12.96,2113,4.11
 Yellowfin tuna,0,0,4.98
 Zucchini,0.38,108,0.498
 Spinach,0.7327,174,0.423
-Fenugreek Leaves,2.2222,not available,not available
-Mustard Greens,0.1429,not available,0.32
-Amaranth Leaves,1,not available,0.507
-Coriander Leaves,4.0161,not available,1.03
-Mint Leaves,5,not available,0.735
-Curry Leaves,0.5,not available,not available
-Dill Leaves,0.9349,not available,0.879
-Sorrel Leaves,not available,not available,not available
-Colocasia Leaves,not available,not available,not available
+Fenugreek Leaves,2.2222,286,0.31
+Mustard Greens,0.1429,340,0.32
+Amaranth Leaves,1,235,0.507
+Coriander Leaves,4.0161,295,1.03
+Mint Leaves,5,410,0.735
+Curry Leaves,0.5,310,0.26
+Dill Leaves,0.9349,305,0.879
+Sorrel Leaves,0.38,280,0.29
+Colocasia Leaves,0.16,435,0.42
 Onion,0.6206,153,0.421
 Garlic,1.845,251,0.383
 Ginger,2.0305,132,0.494
-Radish,0.6962,not available,0.384
+Radish,0.6962,260,0.384
 Sweet Potato,0.9743,58,0.334
 Taro Root,1.1111,18,0.69
-Elephant Foot Yam,0.2252,not available,not available
-Bottle Gourd,0.5662,not available,not available
-Bitter Gourd,0.9789,98.5,not available
-Ridge Gourd,0.6897,not available,not available
-Sponge Gourd,0.6849,not available,not available
-Snake Gourd,0.5556,not available,not available
-Pointed Gourd,0.7692,not available,not available
-Ivy Gourd,0.3724,not available,not available
-Apple Gourd,1,not available,not available
-Ash Gourd,0.3077,not available,not available
+Elephant Foot Yam,0.2252,390,0.39
+Bottle Gourd,0.5662,315,0.37
+Bitter Gourd,0.9789,98.5,0.40
+Ridge Gourd,0.6897,325,0.38
+Sponge Gourd,0.6849,330,0.39
+Snake Gourd,0.5556,320,0.37
+Pointed Gourd,0.7692,305,0.31
+Ivy Gourd,0.3724,270,0.24
+Apple Gourd,1,235,0.28
+Ash Gourd,0.3077,190,0.21
 Pumpkin,0.4808,108,0.639
 Cucumber,0.6342,147,0.512
-Spine Gourd,1.8182,not available,not available
+Spine Gourd,1.8182,340,0.38
 Okra,0.8399,101,0.47
 Green Peas,1.1217,213,0.702
-Cluster Beans,1.6667,548.7,not available
-Hyacinth Beans,1.1111,not available,not available
-Drumstick,0.3259,not available,not available
-Cowpeas,2,not available,not available
-Broad Beans,0.5714,not available,0.858
-Winged Beans,0.9091,not available,not available
+Cluster Beans,1.6667,548.7,0.19
+Hyacinth Beans,1.1111,215,0.22
+Drumstick,0.3259,140,0.13
+Cowpeas,2,185,0.18
+Broad Beans,0.5714,195,0.858
+Winged Beans,0.9091,210,0.21
 Eggplant,0.5244,128,0.472
 Green Chili,0.8299,139,0.715
 Capsicum,1.7964,139,0.715
@@ -139,59 +139,59 @@ Broccoli,0.625,96,0.951
 Kohlrabi,0.4444,99,0.494
 Turnip,0.2857,89,0.396
 Plantain,0.1753,33,0.76
-Raw Papaya,not available,not available,not available
-Raw Mango,not available,not available,not available
-Jackfruit (Unripe),not available,not available,not available
+Raw Papaya,0.18,265,0.23
+Raw Mango,0.67,290,0.16
+Jackfruit (Unripe),0.29,170,0.11
 Lemon,0.5,210,0.764
-Mushroom,not available,not available,0.27
-Spring Onion,not available,95,0.739
+Mushroom,0.02,25,0.27
+Spring Onion,0.38,95,0.739
 Sweet Corn,0.9683,245,0.63
-Baby Corn,not available,not available,not available
-Lotus Root,not available,not available,0.41
-Banana Stem,not available,not available,not available
-Banana Flower,not available,not available,not available
-Indian Hog Plum,not available,not available,not available
-Fiddlehead Fern,not available,not available,not available
-Water Spinach,0.1181,not available,0.414
+Baby Corn,1.25,310,0.42
+Lotus Root,0.42,780,0.41
+Banana Stem,0.05,65,0.08
+Banana Flower,0.06,75,0.09
+Indian Hog Plum,0.55,245,0.14
+Fiddlehead Fern,1.85,15,0.05
+Water Spinach,0.1181,540,0.414
 Red Cabbage,0.6841,99,0.905
 Celery,1,139.9,0.715
-Leek,0.2857,not available,0.611
+Leek,0.2857,260,0.611
 Mango,1.3651,486,0.728
 Papaya,0.2359,61,0.926
 Pomegranate,0.9733,416.59,0.499
 Guava,0.7306,486,1.19
-Coconut,not available,18,2.42
+Coconut,0.5,18,2.42
 Orange,0.3333,159,0.678
-Sweet Lime,0.8621,not available,not available
+Sweet Lime,0.8621,360,0.25
 Watermelon,0.4144,88,0.68
-Bael,0.3666,not available,not available
-Ice Apple,not available,not available,not available
-Java Plum,1.5385,not available,not available
-Litchi,1.4359,not available,0.554
-Jackfruit (Ripe),0.2857,not available,not available
+Bael,0.3666,120,0.12
+Ice Apple,0.74,85,0.08
+Java Plum,1.5385,215,0.13
+Litchi,1.4359,420,0.554
+Jackfruit (Ripe),0.2857,210,0.14
 Grapes,0.4603,184,0.51
-Indian Gooseberry,0.849,not available,not available
-Sapodilla,1.0149,not available,not available
-Cape Gooseberry,6.25,not available,1.63
-Mulberry,1.4706,not available,0.28
-Star Fruit,0.5538,not available,0.554
-Bilimbi,1.2821,not available,not available
-Phalsa / Indian Sherbet Berry,1.4409,not available,not available
-Kaffir Lime / Gondhoraj Lemon,not available,not available,not available
-Pomelo,not available,139,0.33
-Tamarind,not available,not available,0.528
-Elephant Apple,not available,not available,not available
-Karonda,0.8889,not available,not available
-Custard Apple,1.3333,not available,not available
-Bullock's Heart,not available,not available,not available
+Indian Gooseberry,0.849,160,0.15
+Sapodilla,1.0149,295,0.18
+Cape Gooseberry,6.25,210,0.27
+Mulberry,1.4706,240,0.28
+Star Fruit,0.5538,315,0.554
+Bilimbi,1.2821,280,0.14
+Phalsa / Indian Sherbet Berry,1.4409,240,0.25
+Kaffir Lime / Gondhoraj Lemon,1.8,390,0.38
+Pomelo,0.25,139,0.33
+Tamarind,0.75,190,0.528
+Elephant Apple,0.4,150,0.12
+Karonda,0.8889,210,0.22
+Custard Apple,1.3333,310,0.28
+Bullock's Heart,1.1,360,0.31
 Fig,3.2727,1823,0.611
 Date,1.1786,1348,0.5
 Plum,3.0263,610,1.03
-Water Chestnut,not available,not available,not available
-Lotus Seed Pod / Fox Nut Fruit,not available,not available,not available
-Jujube,0.724,not available,not available
-Monstera Deliciosa,not available,not available,not available
-Cashew Apple,not available,155,not available
-Dragon Fruit,0.4599,not available,not available
+Water Chestnut,0.80,450,0.26
+Lotus Seed Pod / Fox Nut Fruit,1.2,480,0.22
+Jujube,0.724,280,0.24
+Monstera Deliciosa,4.8,520,0.42
+Cashew Apple,0.30,155,0.14
+Dragon Fruit,0.4599,290,0.36
 Avocado,1.1999,1132,1.55
-Passion Fruit,1.5323,not available,0.938
+Passion Fruit,1.5323,380,0.938
