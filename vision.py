@@ -8,7 +8,7 @@ import pandas as pd
 MODEL_NAME = "gemini-3.8-flash"
 MAX_FILE_BYTES = 50 * 1024 * 1024
 OUTPUT_COLUMNS = [
-    "item", "match", "quantity", "unit",
+    "item", "match", "quantity", "unit", "quantity_status",
     "weight_per_item", "weight_unit", "confidence", "similar_products",
 ]
 
@@ -21,6 +21,10 @@ RECEIPT_SCHEMA = {
             "match": {"type": ["string", "null"]},
             "quantity": {"type": ["number", "null"]},
             "unit": {"type": ["string", "null"]},
+            "quantity_status": {
+                "type": "string",
+                "enum": ["present", "absent", "unreadable"],
+            },
             "weight_per_item": {"type": ["number", "null"]},
             "weight_unit": {"type": ["string", "null"]},
             "confidence": {
@@ -30,7 +34,7 @@ RECEIPT_SCHEMA = {
         },
         "required": [
             "item", "match", "quantity", "unit",
-            "weight_per_item", "weight_unit", "confidence",
+            "quantity_status", "weight_per_item", "weight_unit", "confidence",
         ],
         "additionalProperties": False,
     },
@@ -139,6 +143,9 @@ def validate_and_match_rows(rows, food_names, similar_products_by_food=None):
             match = canonical_by_key.get(proposed_match.strip().casefold())
 
         quantity = _optional_number(row.get("quantity"), "quantity", row_number)
+        quantity_status = row.get("quantity_status")
+        if quantity_status not in {"present", "absent", "unreadable"}:
+            quantity_status = "absent" if quantity is None else "present"
         weight_per_item = _optional_number(
             row.get("weight_per_item"), "weight_per_item", row_number
         )
@@ -168,6 +175,7 @@ def validate_and_match_rows(rows, food_names, similar_products_by_food=None):
             "match": match,
             "quantity": quantity,
             "unit": unit,
+            "quantity_status": quantity_status,
             "weight_per_item": weight_per_item,
             "weight_unit": weight_unit,
             "confidence": confidence,
@@ -225,9 +233,11 @@ For each food line:
   near-name equivalent. Copy the category exactly from the list. For example,
   red apple can match Apple if Apple is listed.
 - If there is no safe match, set match to null. Do not force a different food.
-- Read quantity and unit from the bill. If a food line has no quantity number
-  printed, assume quantity=1. If a printed number is present but unreadable,
-  set quantity=null. Never invent a weight.
+- Read quantity and unit from the bill. If no amount or item count is printed,
+  set quantity=null, unit=null, and quantity_status="absent". If a number is
+  printed but unreadable, set quantity=null, unit=null, and
+  quantity_status="unreadable". If a quantity/count is printed, set
+  quantity_status="present". Never assume 1 and never invent a weight.
 - Return common mass units in standard form: kg, g, lb, or oz. For example,
   normalize gm, gram, and grams to g.
 - For 3 apples, 500 g each: quantity=3, unit=pieces,
