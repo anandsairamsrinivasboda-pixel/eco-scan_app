@@ -175,7 +175,11 @@ def validate_and_match_rows(rows, food_names, similar_products_by_food=None):
             if unit is None:
                 unit = "pieces"
                 quantity_status = "unitless_count"
-            elif unit in count_units and weight_per_item is not None and weight_unit is None:
+            elif unit in count_units and (
+                weight_per_item is None or weight_unit is None
+            ):
+                # A count without a usable per-item weight cannot become kg;
+                # calc.py will use the requested 1 kg-per-food fallback.
                 quantity_status = "unitless_count"
             else:
                 quantity_status = "present"
@@ -259,8 +263,10 @@ For each food line:
   set unit="pieces" and quantity_status="unitless_count"; leave per-item weight
   fields null. If a per-item weight number is visible but its unit is missing,
   leave both per-item fields null and set quantity_status="unitless_count".
-- For other readable quantities with explicit units, set
-  quantity_status="present".
+- If a quantity is a piece/item count and no usable per-item weight with
+  its unit is available, preserve the count and set
+  quantity_status="unitless_count". For other readable quantities with
+  explicit mass/volume units, set quantity_status="present".
 - Return common mass units in standard form: kg, g, lb, or oz. For example,
   normalize gm, gram, and grams to g.
 - For 3 apples, 500 g each: quantity=3, unit=pieces,
