@@ -1,693 +1,301 @@
+"""Extract foods from receipts and match them to EcoScan CSV categories."""
+import json
+import mimetypes
+from pathlib import Path
+
 import pandas as pd
 
+MODEL_NAME = "gemini-3.8-flash"
+MAX_FILE_BYTES = 50 * 1024 * 1024
+OUTPUT_COLUMNS = [
+    "item", "match", "quantity", "unit", "quantity_status",
+    "weight_per_item", "weight_unit", "confidence", "similar_products",
+]
 
-# Kilograms in one unit of mass.
-UNIT_TO_KG = {
-    "kg": 1.0,
-    "kilogram": 1.0,
-    "kilograms": 1.0,
-    "g": 0.001,
-    "gm": 0.001,
-    "gms": 0.001,
-    "gram": 0.001,
-    "grams": 0.001,
-    "lb": 0.45359237,
-    "lbs": 0.45359237,
-    "pound": 0.45359237,
-    "pounds": 0.45359237,
-    "oz": 0.028349523125,
-    "ounce": 0.028349523125,
-    "ounces": 0.028349523125,
-    # Liquid volumes use the requested density assumption of 1 kg per litre.
-    # This lets quantities such as "1 L" use the per-kg rates in data.csv.
-    "l": 1.0,
-    "liter": 1.0,
-    "liters": 1.0,
-    "litre": 1.0,
-    "litres": 1.0,
+RECEIPT_SCHEMA = {
+    "type": "array",
+    "items": {
+        "type": "object",
+        "properties": {
+            "item": {"type": "string"},
+            "match": {"type": ["string", "null"]},
+            "quantity": {"type": ["number", "null"]},
+            "unit": {"type": ["string", "null"]},
+            "quantity_status": {
+                "type": "string",
+                "enum": ["present", "absent", "unreadable", "unitless_count"],
+            },
+            "weight_per_item": {"type": ["number", "null"]},
+            "weight_unit": {"type": ["string", "null"]},
+            "confidence": {
+                "type": "string",
+                "enum": ["high", "medium", "low"],
+            },
+        },
+        "required": [
+            "item", "match", "quantity", "unit",
+            "quantity_status", "weight_per_item", "weight_unit", "confidence",
+        ],
+        "additionalProperties": False,
+    },
 }
 
-# These units mean the customer gave a count, not a weight.
-COUNT_UNITS = {"piece", "pieces", "each", "item", "items"}
 
-
-def load_environmental_data(file="data.csv"):
-    """Load the food database from a CSV or Excel file."""
-    filename = getattr(file, "name", str(file)).lower()
-
-    if filename.endswith(".csv"):
-        return pd.read_csv(file)
-    elif filename.endswith((".xlsx", ".xls")):
-        return pd.read_excel(file)
+def _read_file(file):
+    """Read a path, Streamlit upload, or camera image."""
+    if hasattr(file, "getvalue"):
+        file_bytes = file.getvalue()
+        filename = getattr(file, "name", "receipt")
+        mime_type = getattr(file, "type", None)
+    elif hasattr(file, "read") and not isinstance(file, (str, Path)):
+        file_bytes = file.read()
+        filename = getattr(file, "name", "receipt")
+        mime_type = getattr(file, "type", None)
     else:
-        raise ValueError("Please provide a CSV or Excel file.")
+        filename = str(file)
+        file_bytes = Path(file).read_bytes()
+        mime_type = None
+
+    mime_type = mime_type or mimetypes.guess_type(str(filename))[0]
+    if not mime_type or not (
+        mime_type.startswith("image/") or mime_type == "application/pdf"
+    ):
+        raise ValueError("Upload an image or PDF receipt.")
+    if not file_bytes:
+        raise ValueError("The uploaded receipt is empty.")
+    if len(file_bytes) > MAX_FILE_BYTES:
+        raise ValueError("The receipt file is larger than 50 MB.")
+    return file_bytes, mime_type
 
 
-def _report_value(value, digits=3):
-    """Format a report number, showing missing values as unavailable."""
-    if pd.isna(value):
-        return "Unavailable"
-    return f"{float(value):,.{digits}f}"
+def _optional_number(value, field_name, row_number):
+    """Validate an optional non-negative number returned by Gemini."""
+    if value is None:
+        return None
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise ValueError(
+            f"Receipt row {row_number}: {field_name} must be a number or null."
+        )
+    if value < 0:
+        raise ValueError(
+            f"Receipt row {row_number}: {field_name} cannot be negative."
+        )
+    return float(value)
 
 
-def _format_per_kg_value(value):
-    """Display a CSV impact rate without rounding its stored value."""
-    if pd.isna(value):
-        return "Unavailable"
-    return format(float(value), ".15g")
+def _build_similar_products_by_food(environmental_data):
+    """Build only database-approved alternatives sharing a similarity group."""
+    if not isinstance(environmental_data, pd.DataFrame):
+        return {}
 
+    columns = {str(column).strip().casefold(): column for column in environmental_data.columns}
+    food_column = columns.get("food")
+    group_column = columns.get("similar_group")
+    if food_column is None or group_column is None:
+        return {}
 
-def format_report(summary):
-    """Return the customer-facing report in the requested text layout."""
-    table = summary["report_table"]
-    per_kg_mode = summary.get("per_kg_mode", False)
-    if per_kg_mode:
-        lines = [
-            "Food name (per kg) | Water usage (L/kg) | Land usage (m²/kg) | Carbon footprint (kg CO₂e/kg)",
-            "-------------------|--------------------|--------------------|----------------------------------",
-        ]
-    else:
-        lines = [
-            "Food name | Water usage (L) | Land usage (m²) | Carbon footprint (kg CO₂)",
-            "----------|-----------------|----------------|--------------------------",
-        ]
-
-    for _, row in table.iterrows():
-        if per_kg_mode:
-            lines.append(
-                f"{row['Food name']} | "
-                f"{_format_per_kg_value(row['Water usage (L/kg)'])} | "
-                f"{_format_per_kg_value(row['Land usage (m²/kg)'])} | "
-                f"{_format_per_kg_value(row['Carbon footprint (kg CO₂e/kg)'])}"
-            )
-        else:
-            lines.append(
-                f"{row['Food name']} | "
-                f"{_report_value(row['Water usage (L)'])} | "
-                f"{_report_value(row['Land usage (m²)'], 4)} | "
-                f"{_report_value(row['Carbon footprint (kg CO₂)'], 4)}"
-            )
-
-    totals = summary["totals"]
-    if per_kg_mode:
-        lines.extend([
-            "",
-            f"Total land usage (sum of listed foods at 1 kg each): {_format_report_total(totals['land'])}",
-            f"Total water usage (sum of listed foods at 1 kg each): {_format_report_total(totals['water'])}",
-            f"Total carbon footprint (sum of listed foods at 1 kg each): {_format_report_total(totals['carbon'])}",
-        ])
-    else:
-        lines.extend([
-            "",
-            f"Total land usage: {_format_report_total(totals['land'])}",
-            f"Total water usage: {_format_report_total(totals['water'])}",
-            f"Total carbon footprint: {_format_report_total(totals['carbon'])}",
-        ])
-    lines.append("")
-
-    phrases = {
-        "land": "consumes most of land in your bill",
-        "water": "consumes most of water in your bill",
-        "carbon": "produces most of CO₂ in your bill",
-    }
-    for measure in ("land", "water", "carbon"):
-        contributor = summary["highest_contributors"][measure]
-        if contributor is None:
-            lines.append(f"No {measure} data is available for comparison.")
+    grouped_names = {}
+    for _, row in environmental_data[[food_column, group_column]].iterrows():
+        food = row[food_column]
+        group = row[group_column]
+        if pd.isna(food) or pd.isna(group):
             continue
+        food = str(food).strip()
+        group = str(group).strip().casefold()
+        if food and group:
+            grouped_names.setdefault(group, []).append(food)
 
-        percentage = contributor["share_of_total_percent"]
-        basis = "total"
-        if percentage is None:
-            percentage = contributor["share_of_known_subtotal_percent"]
-            basis = "known subtotal"
-        if percentage is None:
-            percentage_text = "unknown"
-        else:
-            percentage_text = f"{percentage:.2f}% of {basis}"
-
-        if per_kg_mode:
-            per_kg_phrases = {
-                "land": "has the highest land use per kg among the listed foods",
-                "water": "has the highest water use per kg among the listed foods",
-                "carbon": "has the highest carbon footprint per kg among the listed foods",
-            }
-            percentage_text = percentage_text.replace("of total", "of combined per-kg values")
-            percentage_text = percentage_text.replace("of known subtotal", "of known combined per-kg values")
-            lines.append(
-                f"{contributor['food']} {per_kg_phrases[measure]}: {percentage_text}"
-            )
-        else:
-            lines.append(
-                f"{contributor['food']} {phrases[measure]}: {percentage_text}"
-            )
-
-    if summary.get("suggestions"):
-        lines.extend(["", "Suggestions:"])
-        labels = {
-            "land": "land use",
-            "water": "water use",
-            "carbon": "carbon footprint",
-        }
-        for suggestion in summary["suggestions"]:
-            label = labels[suggestion["measure"]]
-            if per_kg_mode:
-                lines.append(
-                    f"For better {label} per kg, you can prefer {suggestion['alternative']} "
-                    f"instead of {suggestion['food']}, which could reduce {label} "
-                    f"by {suggestion['reduction_percent']:.2f}% at 1 kg of each food."
-                )
-            else:
-                lines.append(
-                    f"For better {label}, you can prefer {suggestion['alternative']} "
-                    f"instead of {suggestion['food']}, which could reduce {label} "
-                    f"by {suggestion['reduction_percent']:.2f}% for the same quantity."
-                )
-
-    return "\n".join(lines)
+    alternatives = {}
+    for names in grouped_names.values():
+        for food in names:
+            alternatives[food.casefold()] = [
+                other for other in names if other.casefold() != food.casefold()
+            ]
+    return alternatives
 
 
-def _format_report_total(total):
-    if total["complete"]:
-        return f"{total['total']:,.4f} {total['unit']}"
-    return (
-        f"incomplete (known subtotal {total['known_subtotal']:,.4f} "
-        f"{total['unit']})"
-    )
+def validate_and_match_rows(rows, food_names, similar_products_by_food=None):
+    """Validate CSV matches and attach their database-approved alternatives."""
+    if not isinstance(rows, list):
+        raise ValueError("Gemini's response must be a JSON list.")
 
-
-def _clean_candidate_names(value):
-    """Accept only a list of possible alternatives provided by vision.py."""
-    if not isinstance(value, (list, tuple, set)):
-        return []
-    return [str(name).strip() for name in value if name is not None and str(name).strip()]
-
-
-def calculate_impact(products, environmental_data):
-    """
-    Calculate impacts for foods on a receipt.
-
-    products must contain:
-        Product, Quantity, Unit
-
-    For counted foods, it must also contain:
-        Weight_per_item, Weight_unit
-
-    Examples:
-        Apple, 2, lb
-        Apple, 3, pieces, 500, g
-
-    environmental_data must contain the columns from your CSV:
-        food, land_m2_per_kg, water_used, carbon_footprint
-
-    Returns:
-        result: calculated impacts for each receipt line
-        summary: impacts combined by food, totals, and highest contributors
-    """
-    env = environmental_data.copy()
-    items = products.copy()
-
-    env.columns = env.columns.astype(str).str.strip()
-    items.columns = items.columns.astype(str).str.strip()
-
-    # Accept the lowercase column names returned by vision.py.
-    items = items.rename(columns={
-        "item": "Product",
-        "quantity": "Quantity",
-        "unit": "Unit",
-        "weight_per_item": "Weight_per_item",
-        "weight_unit": "Weight_unit",
-    })
-
-    # vision.py returns both the wording printed on the receipt (item) and
-    # the verified canonical CSV category (match). Prefer that verified match
-    # for calculations. If it is empty, keep the receipt wording so the
-    # matching step below can report the food as unavailable.
-    if "match" in items.columns:
-        suggested_match = items["match"].astype("string").str.strip()
-        has_match = suggested_match.notna() & suggested_match.ne("")
-        items.loc[has_match, "Product"] = suggested_match[has_match]
-
-    # Rename your CSV columns to the names used in the calculations.
-    env = env.rename(columns={
-        "food": "Product",
-        "carbon_footprint": "CO2_kg_per_kg",
-        "water_used": "Water_litres_per_kg",
-        "land_m2_per_kg": "Land_m2_per_kg",
-    })
-
-    required_env = [
-        "Product",
-        "CO2_kg_per_kg",
-        "Water_litres_per_kg",
-        "Land_m2_per_kg",
+    allowed_foods = [
+        str(name).strip()
+        for name in food_names
+        if name is not None and str(name).strip()
     ]
-    required_items = ["Product", "Quantity", "Unit"]
+    canonical_by_key = {name.casefold(): name for name in allowed_foods}
+    cleaned_rows = []
 
-    missing_env = [col for col in required_env if col not in env.columns]
-    missing_items = [col for col in required_items if col not in items.columns]
+    for row_number, row in enumerate(rows, start=1):
+        if not isinstance(row, dict):
+            raise ValueError(f"Receipt row {row_number} must be an object.")
 
-    if missing_env:
-        raise ValueError(f"Database is missing columns: {missing_env}")
+        item = row.get("item")
+        if not isinstance(item, str) or not item.strip():
+            raise ValueError(f"Receipt row {row_number} has no food name.")
+        item = item.strip()
 
-    if missing_items:
-        raise ValueError(f"Products are missing columns: {missing_items}")
+        proposed_match = row.get("match")
+        match = None
+        if isinstance(proposed_match, str) and proposed_match.strip():
+            # A model suggestion is accepted only if it exists in the CSV.
+            match = canonical_by_key.get(proposed_match.strip().casefold())
 
-    # Food alternatives must be deliberately assigned to a shared group in
-    # data.csv. Older databases without this column safely produce no advice.
-    if "similar_group" not in env.columns:
-        env["similar_group"] = pd.NA
-    env["similar_group"] = env["similar_group"].astype("string").str.strip()
-    env.loc[env["similar_group"].eq(""), "similar_group"] = pd.NA
-    env["similar_group_key"] = env["similar_group"].str.casefold()
-
-    # These fields are optional for foods sold by mass.
-    # They are required when the receipt gives a count like "3 pieces".
-    for column in ["Weight_per_item", "Weight_unit"]:
-        if column not in items.columns:
-            items[column] = pd.NA
-    if "similar_products" not in items.columns:
-        items["similar_products"] = pd.Series(
-            [[] for _ in range(len(items))], index=items.index, dtype=object
-        )
-    else:
-        items["similar_products"] = items["similar_products"].apply(
-            _clean_candidate_names
+        quantity = _optional_number(row.get("quantity"), "quantity", row_number)
+        quantity_status = row.get("quantity_status")
+        if quantity_status not in {"present", "absent", "unreadable", "unitless_count"}:
+            quantity_status = "absent" if quantity is None else "present"
+        weight_per_item = _optional_number(
+            row.get("weight_per_item"), "weight_per_item", row_number
         )
 
-    # Check that food names are present.
-    for table, label in [(env, "database"), (items, "products")]:
-        if (
-            table["Product"].isna().any()
-            or table["Product"].astype(str).str.strip().eq("").any()
-        ):
-            raise ValueError(f"A food name is missing from the {label}.")
+        unit = row.get("unit")
+        if unit is not None:
+            if not isinstance(unit, str):
+                raise ValueError(f"Receipt row {row_number}: unit must be text or null.")
+            unit = unit.strip().casefold() or None
+            if unit in {"gm", "gms", "gram", "grams"}:
+                unit = "g"
 
-    # A bill with no printed amounts is reported as a per-kg comparison using
-    # the exact impact rates from the CSV. Mixed or unreadable amounts stop
-    # here so the report never combines incomparable units.
-    items["Quantity"] = pd.to_numeric(items["Quantity"], errors="coerce")
-    if "quantity_status" in items.columns:
-        quantity_status = items["quantity_status"].astype("string").str.strip().str.casefold()
-        quantity_status = quantity_status.fillna("")
-        quantity_status = quantity_status.mask(quantity_status.eq(""), "absent")
-    else:
-        quantity_status = pd.Series(
-            ["absent" if pd.isna(value) else "present" for value in items["Quantity"]],
-            index=items.index,
-        )
+        weight_unit = row.get("weight_unit")
+        if weight_unit is not None:
+            if not isinstance(weight_unit, str):
+                raise ValueError(
+                    f"Receipt row {row_number}: weight_unit must be text or null."
+                )
+            weight_unit = weight_unit.strip().casefold() or None
 
-    if quantity_status.eq("unreadable").any():
-        raise ValueError("A printed quantity could not be read. Please upload a clearer bill.")
-
-    missing_quantities = items["Quantity"].isna()
-    # An amount without a unit is retained by vision.py as an item count.
-    # Use the established 1 kg-per-food fallback for the entire bill rather
-    # than mixing guessed counts with measured quantities.
-    unit_keys_for_status = items["Unit"].astype(str).str.strip().str.casefold()
-    has_explicit_mass_or_volume_unit = unit_keys_for_status.isin(UNIT_TO_KG)
-    unitless_count_mode = (
-        quantity_status.eq("unitless_count")
-        & ~has_explicit_mass_or_volume_unit
-    ).any()
-    per_kg_mode = bool(
-        unitless_count_mode
-        or (missing_quantities.all() and quantity_status.eq("absent").all())
-    )
-    if per_kg_mode:
-        items["Quantity"] = 1.0
-        items["Unit"] = "kg"
-    elif missing_quantities.any():
-        foods = items.loc[missing_quantities, "Product"].tolist()
-        raise ValueError(
-            "Some food quantities are missing while others are present. "
-            "Please provide readable quantities for all foods or upload a bill with no quantities. "
-            "Missing for: " + ", ".join(foods)
-        )
-
-    if (items["Quantity"] < 0).any():
-        raise ValueError("Food quantities cannot be negative.")
-
-    missing_units = (
-        items["Unit"].isna()
-        | items["Unit"].astype(str).str.strip().eq("")
-    )
-    if missing_units.any():
-        foods = items.loc[missing_units, "Product"].tolist()
-        raise ValueError("A quantity unit is missing for: " + ", ".join(foods))
-
-    items["Unit_key"] = (
-        items["Unit"].astype(str).str.strip().str.casefold()
-    )
-
-    mass_rows = items["Unit_key"].isin(UNIT_TO_KG)
-    count_rows = items["Unit_key"].isin(COUNT_UNITS)
-    unsupported_rows = ~(mass_rows | count_rows)
-
-    if unsupported_rows.any():
-        bad_units = items.loc[unsupported_rows, "Unit"].unique()
-        raise ValueError(
-            "Unsupported unit(s): "
-            + ", ".join(str(unit) for unit in bad_units)
-            + ". Use kg, g, lb, oz, litres (L), or pieces with a per-item weight."
-        )
-
-    items["Quantity_kg"] = 0.0
-
-    # Foods sold by mass: quantity × kg in each unit.
-    if mass_rows.any():
-        items.loc[mass_rows, "Quantity_kg"] = (
-            items.loc[mass_rows, "Quantity"]
-            * items.loc[mass_rows, "Unit_key"].map(UNIT_TO_KG)
-        )
-
-    # Convert the per-item weight to a number for counted foods.
-    items["Weight_per_item"] = pd.to_numeric(
-        items["Weight_per_item"], errors="coerce"
-    )
-    items["Weight_unit_key"] = (
-        items["Weight_unit"].astype(str).str.strip().str.casefold()
-    )
-
-    missing_item_weight = count_rows & (
-        items["Weight_per_item"].isna()
-        | items["Weight_unit"].isna()
-        | items["Weight_unit"].astype(str).str.strip().eq("")
-    )
-
-    if missing_item_weight.any():
-        foods = items.loc[missing_item_weight, "Product"].tolist()
-        raise ValueError(
-            "Add the weight of one piece/item for: " + ", ".join(foods)
-        )
-
-    if (
-        count_rows
-        & items["Weight_per_item"].notna()
-        & (items["Weight_per_item"] <= 0)
-    ).any():
-        raise ValueError("The weight of each piece/item must be greater than zero.")
-
-    bad_weight_unit = count_rows & ~items["Weight_unit_key"].isin(UNIT_TO_KG)
-
-    if bad_weight_unit.any():
-        bad_units = items.loc[bad_weight_unit, "Weight_unit"].unique()
-        raise ValueError(
-            "Unsupported per-item weight unit(s): "
-            + ", ".join(str(unit) for unit in bad_units)
-            + ". Use kg, g, lb, oz, or litres (L)."
-        )
-
-    # Counted foods: number of items × weight per item × kg conversion.
-    if count_rows.any():
-        items.loc[count_rows, "Quantity_kg"] = (
-            items.loc[count_rows, "Quantity"]
-            * items.loc[count_rows, "Weight_per_item"]
-            * items.loc[count_rows, "Weight_unit_key"].map(UNIT_TO_KG)
-        )
-
-    # Match food names without being sensitive to capitalization or extra spaces.
-    env["Product_key"] = (
-        env["Product"].astype(str).str.strip().str.casefold()
-    )
-    items["Product_key"] = (
-        items["Product"].astype(str).str.strip().str.casefold()
-    )
-
-    if env["Product_key"].duplicated().any():
-        raise ValueError("The database contains duplicate food names.")
-
-    # Convert "not available" to missing data, not zero.
-    missing_words = {"", "not available", "na", "n/a", "none", "null"}
-    impact_columns = [
-        "CO2_kg_per_kg",
-        "Water_litres_per_kg",
-        "Land_m2_per_kg",
-    ]
-
-    for column in impact_columns:
-        original = env[column]
-        marked_missing = (
-            original.isna()
-            | original.astype(str).str.strip().str.casefold().isin(missing_words)
-        )
-        numbers = pd.to_numeric(original.mask(marked_missing), errors="coerce")
-
-        invalid = ~marked_missing & numbers.isna()
-        if invalid.any():
-            bad_foods = env.loc[invalid, "Product"].tolist()
-            raise ValueError(f"Invalid values in {column} for: {bad_foods}")
-
-        if (numbers.dropna() < 0).any():
-            raise ValueError(f"Values in {column} cannot be negative.")
-
-        env[column] = numbers
-
-    # Match receipt products to foods in the database.
-    database_for_merge = env.drop(columns=["Product"])
-
-    result = items.merge(
-        database_for_merge,
-        on="Product_key",
-        how="left",
-        validate="many_to_one",
-        indicator=True,
-    )
-
-    unmatched = result.loc[result["_merge"] == "left_only", "Product"].unique()
-
-    if len(unmatched):
-        raise ValueError(
-            "No database match found for: " + ", ".join(unmatched)
-        )
-
-    result = result.drop(
-        columns=["_merge", "Unit_key", "Weight_unit_key"]
-    )
-
-    # Cross-check every candidate against the CSV and require the same
-    # similarity group. This protects calc.py if a candidate is incorrect.
-    env_by_key = env.set_index("Product_key")
-    similar_by_food_key = {}
-    for _, row in result.iterrows():
-        source_key = row["Product_key"]
-        group_key = row["similar_group_key"]
-        accepted = set()
-        if pd.notna(group_key):
-            for candidate in _clean_candidate_names(row["similar_products"]):
-                candidate_key = candidate.casefold()
-                if candidate_key not in env_by_key.index or candidate_key == source_key:
-                    continue
-                candidate_group = env_by_key.loc[candidate_key, "similar_group_key"]
-                if pd.notna(candidate_group) and candidate_group == group_key:
-                    accepted.add(candidate_key)
-        similar_by_food_key.setdefault(source_key, set()).update(accepted)
-    result = result.drop(columns=["similar_products"])
-
-    # Item impact = total kg × the database impact per kg.
-    result["CO2_total_kg"] = (
-        result["Quantity_kg"] * result["CO2_kg_per_kg"]
-    )
-    result["Water_total_litres"] = (
-        result["Quantity_kg"] * result["Water_litres_per_kg"]
-    )
-    result["Land_total_m2"] = (
-        result["Quantity_kg"] * result["Land_m2_per_kg"]
-    )
-
-    # Combine duplicate receipt lines for the same food.
-    # min_count=1 keeps missing impacts missing instead of turning them into zero.
-    if per_kg_mode:
-        # A no-quantity report compares each unique detected food at a 1 kg
-        # reference amount, so duplicate receipt lines do not double-count it.
-        by_food = result.groupby("Product_key", as_index=False).agg(
-            Product=("Product", "first"),
-            Quantity_kg=("Quantity_kg", "first"),
-            CO2_total_kg=("CO2_total_kg", "first"),
-            Water_total_litres=("Water_total_litres", "first"),
-            Land_total_m2=("Land_total_m2", "first"),
-        )
-    else:
-        by_food = result.groupby("Product_key", as_index=False).agg(
-            Product=("Product", "first"),
-            Quantity_kg=("Quantity_kg", "sum"),
-            CO2_total_kg=("CO2_total_kg", lambda values: values.sum(min_count=1)),
-            Water_total_litres=(
-                "Water_total_litres",
-                lambda values: values.sum(min_count=1),
-            ),
-            Land_total_m2=(
-                "Land_total_m2",
-                lambda values: values.sum(min_count=1),
-            ),
-        )
-
-    # Calculate totals and find the highest-contributing food for each measure.
-    if per_kg_mode:
-        measures = {
-            "carbon": ("CO2_total_kg", "CO2_kg_per_kg", "kg CO₂e/kg"),
-            "water": ("Water_total_litres", "Water_litres_per_kg", "L/kg"),
-            "land": ("Land_total_m2", "Land_m2_per_kg", "m²/kg"),
-        }
-    else:
-        measures = {
-            "carbon": ("CO2_total_kg", "CO2_kg_per_kg", "kg CO2e"),
-            "water": ("Water_total_litres", "Water_litres_per_kg", "litres"),
-            "land": ("Land_total_m2", "Land_m2_per_kg", "m²"),
-        }
-
-    totals = {}
-    highest_contributors = {}
-
-    for measure, (column, _, unit) in measures.items():
-        known_values = by_food[column].dropna()
-        missing_foods = by_food.loc[
-            by_food[column].isna(), "Product"
-        ].tolist()
-
-        known_subtotal = float(known_values.sum())
-        complete = len(missing_foods) == 0
-
-        # A full total is shown only if every food has data for that measure.
-        total = known_subtotal if complete else None
-
-        totals[measure] = {
-            "total": total,
-            "unit": unit,
-            "known_subtotal": known_subtotal,
-            "complete": complete,
-            "missing_foods": missing_foods,
-        }
-
-        if known_values.empty:
-            highest_contributors[measure] = None
-            continue
-
-        top_index = by_food[column].idxmax()
-        top_food = by_food.loc[top_index]
-        top_value = float(top_food[column])
-
-        highest_contributors[measure] = {
-            "food": top_food["Product"],
-            "impact": top_value,
-            "unit": unit,
-            "share_of_known_subtotal_percent": (
-                top_value / known_subtotal * 100
-                if known_subtotal > 0
-                else None
-            ),
-            "share_of_total_percent": (
-                top_value / total * 100
-                if complete and total and total > 0
-                else None
-            ),
-        }
-
-    # Suggest the lowest-impact same-group alternative for the top food in
-    # each measure. The comparison assumes the same purchased weight.
-    suggestions = []
-    for measure, (_, rate_column, unit) in measures.items():
-        top = highest_contributors[measure]
-        if top is None or top["impact"] <= 0:
-            continue
-
-        top_row = by_food.loc[by_food["Product"] == top["food"]].iloc[0]
-        top_key = top_row["Product_key"]
-        if not similar_by_food_key.get(top_key):
-            continue
-
-        current_rate = env_by_key.loc[top_key, rate_column]
-        if pd.isna(current_rate) or current_rate <= 0:
-            continue
-
-        choices = []
-        for candidate_key in similar_by_food_key[top_key]:
-            candidate_rate = env_by_key.loc[candidate_key, rate_column]
-            if pd.isna(candidate_rate) or candidate_rate < 0 or candidate_rate >= current_rate:
-                continue
-            candidate_impact = float(top_row["Quantity_kg"]) * float(candidate_rate)
-            choices.append((float(candidate_rate), candidate_key, candidate_impact))
-
-        if choices:
-            _, candidate_key, alternative_impact = min(
-                choices, key=lambda candidate: candidate[0]
-            )
-            suggestions.append({
-                "measure": measure,
-                "food": top["food"],
-                "alternative": env_by_key.loc[candidate_key, "Product"],
-                "reduction_percent": (
-                    (top["impact"] - alternative_impact) / top["impact"] * 100
-                ),
-                "current_impact": top["impact"],
-                "alternative_impact": alternative_impact,
-                "unit": unit,
-            })
-
-    by_food = by_food.drop(columns=["Product_key"])
-
-    summary = {
-        "by_food": by_food,
-        "totals": totals,
-        "highest_contributors": highest_contributors,
-        "suggestions": suggestions,
-        "per_kg_mode": per_kg_mode,
-    }
-
-    # Customer-facing table in the exact column order requested. Keep the
-    # detailed `result` DataFrame and existing summary fields for app.py use.
-    def report_food_name(row):
-        # No-quantity receipts show each unique food as a 1 kg reference.
-        if per_kg_mode:
-            return f"{row['Product']} (per kg)"
-
-        # Show the combined purchased amount beside the food name.
-        quantity_kg = float(row["Quantity_kg"])
-        if abs(quantity_kg - round(quantity_kg)) < 1e-10:
-            quantity_text = f"{int(round(quantity_kg))}"
-            unit_text = "Kg"
-        else:
-            grams = quantity_kg * 1000
-            if abs(grams - round(grams)) < 1e-8:
-                quantity_text = f"{int(round(grams))}"
+        # Reconcile Gemini's status with the extracted units. A valid
+        # mass/volume unit must not be downgraded by an inconsistent label.
+        count_units = {"piece", "pieces", "each", "item", "items", "pc", "pcs"}
+        if unit in {"pc", "pcs", "piece", "each", "item", "items", "count", "counts"}:
+            unit = "pieces"
+        if quantity is not None:
+            if unit is None:
+                unit = "pieces"
+                quantity_status = "unitless_count"
+            elif unit in count_units and weight_per_item is not None and weight_unit is None:
+                quantity_status = "unitless_count"
             else:
-                quantity_text = f"{grams:.3f}".rstrip("0").rstrip(".")
-            unit_text = "gm"
-        return f"{row['Product']} {quantity_text} {unit_text}"
+                quantity_status = "present"
+        elif quantity_status != "unreadable":
+            quantity_status = "absent"
 
-    report_foods = by_food.copy()
-    report_foods["Food name"] = report_foods.apply(report_food_name, axis=1)
-    if per_kg_mode:
-        summary["report_table"] = by_food[[
-            "Product",
-            "Water_total_litres",
-            "Land_total_m2",
-            "CO2_total_kg",
-        ]].rename(columns={
-            "Water_total_litres": "Water usage (L/kg)",
-            "Land_total_m2": "Land usage (m²/kg)",
-            "CO2_total_kg": "Carbon footprint (kg CO₂e/kg)",
-        })
-    else:
-        summary["report_table"] = by_food[[
-            "Product",
-            "Water_total_litres",
-            "Land_total_m2",
-            "CO2_total_kg",
-        ]].rename(columns={
-            "Water_total_litres": "Water usage (L)",
-            "Land_total_m2": "Land usage (m²)",
-            "CO2_total_kg": "Carbon footprint (kg CO₂)",
-        })
-    summary["report_table"]["Food name"] = report_foods["Food name"].to_numpy()
-    if per_kg_mode:
-        summary["report_table"] = summary["report_table"][
-            ["Food name", "Water usage (L/kg)", "Land usage (m²/kg)", "Carbon footprint (kg CO₂e/kg)"]
-        ]
-    else:
-        summary["report_table"] = summary["report_table"][
-            ["Food name", "Water usage (L)", "Land usage (m²)", "Carbon footprint (kg CO₂)"]
-        ]
-    summary["report_text"] = format_report(summary)
+        if weight_per_item is not None and weight_unit is None:
+            weight_per_item = None
+        confidence = row.get("confidence", "low")
+        if confidence not in {"high", "medium", "low"}:
+            confidence = "low"
 
-    return result, summary
+        cleaned_rows.append({
+            "item": item,
+            "match": match,
+            "quantity": quantity,
+            "unit": unit,
+            "quantity_status": quantity_status,
+            "weight_per_item": weight_per_item,
+            "weight_unit": weight_unit,
+            "confidence": confidence,
+            # Candidates come from the CSV's explicit group, never from
+            # substring matching or an unverified model guess.
+            "similar_products": (
+                list((similar_products_by_food or {}).get(match.casefold(), []))
+                if match
+                else []
+            ),
+        })
+
+    return pd.DataFrame(cleaned_rows, columns=OUTPUT_COLUMNS)
+
+
+def parse_receipt(file, food_names, client=None):
+    """Extract foods from a receipt image/PDF and match them to CSV names.
+
+    file can be a path, Streamlit uploader result, or camera_input result.
+    Pass the full CSV DataFrame to attach alternatives from its similar_group
+    column. Passing only food names keeps older callers working without advice.
+    The returned DataFrame has OUTPUT_COLUMNS and does not calculate impacts.
+    """
+    if food_names is None:
+        raise ValueError("Pass data.csv or its food-name column to this function.")
+
+    similar_products_by_food = _build_similar_products_by_food(food_names)
+    if isinstance(food_names, pd.DataFrame):
+        columns = {str(column).strip().casefold(): column for column in food_names.columns}
+        food_column = columns.get("food")
+        if food_column is None:
+            raise ValueError("The database must contain a 'food' column.")
+        food_names = food_names[food_column].tolist()
+    else:
+        food_names = list(food_names)
+    if not food_names:
+        raise ValueError("The CSV food-name list is empty.")
+
+    file_bytes, mime_type = _read_file(file)
+
+    # Client reads GEMINI_API_KEY from the environment.
+    if client is None:
+        from google import genai
+        client = genai.Client()
+
+    prompt = f"""
+Read this grocery or restaurant bill. Return only actual food products bought.
+Ignore the hotel/store/restaurant name, address, phone number, date, invoice
+number, prices, taxes, discounts, subtotal, total, payment details, and other
+non-food text.
+
+For each food line:
+- Keep the printed food name in item.
+- Choose match only when a CSV category below is the same food or a safe
+  near-name equivalent. Copy the category exactly from the list. For example,
+  red apple can match Apple if Apple is listed.
+- If there is no safe match, set match to null. Do not force a different food.
+- Read quantities and units exactly as printed. If no amount or item count is
+  printed, set quantity=null, unit=null, and quantity_status="absent". If a
+  number is printed but unreadable, set quantity=null, unit=null, and
+  quantity_status="unreadable". Never assume 1 and never invent a weight.
+- If a readable number is printed with no unit, preserve it as an item count:
+  set unit="pieces" and quantity_status="unitless_count"; leave per-item weight
+  fields null. If a per-item weight number is visible but its unit is missing,
+  leave both per-item fields null and set quantity_status="unitless_count".
+- For other readable quantities with explicit units, set
+  quantity_status="present".
+- Return common mass units in standard form: kg, g, lb, or oz. For example,
+  normalize gm, gram, and grams to g.
+- For 3 apples, 500 g each: quantity=3, unit=pieces,
+  weight_per_item=500, weight_unit=g.
+- For apples, 500 g total: quantity=500, unit=g, and both per-item fields=null.
+- If quantity or unit is unclear, set it to null so the user can review it.
+- Set confidence to high, medium, or low.
+
+Allowed CSV food categories:
+{json.dumps(food_names, ensure_ascii=False)}
+"""
+
+    from google.genai import types
+
+    response = client.models.generate_content(
+        model=MODEL_NAME,
+        contents=[
+            types.Part.from_bytes(data=file_bytes, mime_type=mime_type),
+            prompt,
+        ],
+        config=types.GenerateContentConfig(
+            response_mime_type="application/json",
+            response_json_schema=RECEIPT_SCHEMA,
+        ),
+    )
+
+    if not response.text:
+        raise ValueError("Gemini returned no receipt data. Try a clearer photo.")
+
+    try:
+        rows = json.loads(response.text)
+    except json.JSONDecodeError as error:
+        raise ValueError("Gemini returned invalid JSON for the receipt.") from error
+
+    return validate_and_match_rows(
+        rows, food_names, similar_products_by_food=similar_products_by_food
+    )
+
