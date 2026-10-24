@@ -1,197 +1,267 @@
-food,land_m2_per_kg,water_used,carbon_footprint
-Apple,0.63,260,0.43
-Banana,1.93,130,0.86
-Barley,1.11,210,1.18
-Beef (beef herd),326.21,1001,99.48
-Beef (dairy herd),43.24,1001,33.3
-Beet Sugar,1.83,329,1.81
-Berries & Grapes,2.41,174,1.53
-Brassicas,0.55,99,0.51
-Cane Sugar,2.04,559,3.2
-Tapioca,1.81,13,1.32
-Cheese,87.79,796,23.88
-Citrus Fruit,0.86,159,0.39
-Coffee,21.62,772,28.53
-Dark Chocolate,68.96,391,46.65
-Eggs,6.27,673,4.67
-Fish (farmed),0,7800,13.63
-Groundnuts,9.11,448,3.23
-Lamb & Mutton,369.81,598,39.72
-Maize,2.94,275,1.7
-Milk,8.95,158,3.15
-Nuts,12.96,2047,0.43
-Oatmeal,7.6,418,2.48
-Onions & Leeks,0.39,153,0.5
-Other Fruit,0.89,240,1.05
-Other Pulses,15.57,875,1.79
-Other Vegetables,0.38,128,0.53
-Peas,7.46,526,0.98
-Pig Meat,17.36,1081,12.31
-Potato,0.88,96,0.46
-Poultry Meat,12.22,780,9.87
-Prawns (farmed),0,2100,26.87
-Rice,2.8,685,4.45
-Root Vegetables,0.33,59,0.43
-Soy milk,0.66,20.6,0.98
-Tofu,3.52,127,3.16
-Tomato,0.8,106,2.09
-Wheat & Rye,3.85,549,1.57
-Wine,1.78,262,1.79
-Albacore tuna,0,0,9.38
-Apricot,0.89,594,1.45
-Atlantic herring,0,0,2.68
-Atlantic mackerel,0,0,2.62
-Beetroot,0.33,89,0.408
-Black pepper,3.85,1071,9.4
-Bluefin tuna,0,0,4.98
-Brown crab,0,0,33
-Carrot,0.33,89,0.396
-Cauliflower,0.55,96,0.721
-Cherry,0.89,643,1.74
-Chicory (witloof / endive),0.38,105,0.861
-Clementine,0.86,270,1.3
-Cod family (Gadidae),0,0,12
-Common sole,0,0,7.48
-Duck,12.22,780,8.06
-Durum wheat,3.85,549,1.23
-European anchovy,0,0,2.51
-Faba bean,15.57,701,0.858
-French Beans,0.38,242,0.447
-Goat meat,369.81,336,41.3
-Goat milk,8.95,158,1.52
-Grapefruit,0.86,139,0.926
-Great scallop,0,0,9.89
-Hemp seed (grain),10,429,2.91
-Kiwi,0.89,206,1
-Lettuce,0.38,105,0.868
-Lobster,0,0,41.6
-Lupine,15.57,875,1.1
-Muskmelon,0.89,88,0.979
-Mussels,0,0,5.33
-Oats (grain),7.6,309,0.953
-Peach,0.89,327,0.591
-Pear,0.89,277,0.387
-Pineapple,0.89,40,1.36
-Quinoa,6.57,570,7.09
-Rabbit,7.67,780,5.78
-Rapeseed,3.1,567,1.25
-Saithe (pollock),0,0,8.29
-Salmon (farmed),0,540,5.55
-Sardine (European pilchard),0,0,2.28
-Sea bass / sea bream (farmed),0,480,12.3
-Seaweed (Laminaria),0,0,0.53
-Sheep milk,8.95,158,2.18
-Skipjack tuna,0,0,4.95
-Sorghum grain,2.94,190,0.427
-Soybean,15.57,107,1.25
-Strawberry,2.41,146,0.533
-Sugar beet (roots),0.13,51,0.408
-Sunflower seed,4.2,349,2.91
-Triticale,3.85,549,1.57
-Trout,0,17200,5.68
-Turkey,12.22,780,4.56
-Veal,43.24,1001,22.09
-Walnut,12.96,2113,4.11
-Yellowfin tuna,0,0,4.98
-Zucchini,0.38,108,0.498
-Spinach,0.7327,174,0.423
-Fenugreek Leaves,2.2222,not available,not available
-Mustard Greens,0.1429,not available,0.32
-Amaranth Leaves,1,not available,0.507
-Coriander Leaves,4.0161,not available,1.03
-Mint Leaves,5,not available,0.735
-Curry Leaves,0.5,not available,not available
-Dill Leaves,0.9349,not available,0.879
-Sorrel Leaves,not available,not available,not available
-Colocasia Leaves,not available,not available,not available
-Onion,0.6206,153,0.421
-Garlic,1.845,251,0.383
-Ginger,2.0305,132,0.494
-Radish,0.6962,not available,0.384
-Sweet Potato,0.9743,58,0.334
-Taro Root,1.1111,18,0.69
-Elephant Foot Yam,0.2252,not available,not available
-Bottle Gourd,0.5662,not available,not available
-Bitter Gourd,0.9789,98.5,not available
-Ridge Gourd,0.6897,not available,not available
-Sponge Gourd,0.6849,not available,not available
-Snake Gourd,0.5556,not available,not available
-Pointed Gourd,0.7692,not available,not available
-Ivy Gourd,0.3724,not available,not available
-Apple Gourd,1,not available,not available
-Ash Gourd,0.3077,not available,not available
-Pumpkin,0.4808,108,0.639
-Cucumber,0.6342,147,0.512
-Spine Gourd,1.8182,not available,not available
-Okra,0.8399,101,0.47
-Green Peas,1.1217,213,0.702
-Cluster Beans,1.6667,548.7,not available
-Hyacinth Beans,1.1111,not available,not available
-Drumstick,0.3259,not available,not available
-Cowpeas,2,not available,not available
-Broad Beans,0.5714,not available,0.858
-Winged Beans,0.9091,not available,not available
-Eggplant,0.5244,128,0.472
-Green Chili,0.8299,139,0.715
-Capsicum,1.7964,139,0.715
-Cabbage,0.4425,99,0.762
-Broccoli,0.625,96,0.951
-Kohlrabi,0.4444,99,0.494
-Turnip,0.2857,89,0.396
-Plantain,0.1753,33,0.76
-Raw Papaya,not available,not available,not available
-Raw Mango,not available,not available,not available
-Jackfruit (Unripe),not available,not available,not available
-Lemon,0.5,210,0.764
-Mushroom,not available,not available,0.27
-Spring Onion,not available,95,0.739
-Sweet Corn,0.9683,245,0.63
-Baby Corn,not available,not available,not available
-Lotus Root,not available,not available,0.41
-Banana Stem,not available,not available,not available
-Banana Flower,not available,not available,not available
-Indian Hog Plum,not available,not available,not available
-Fiddlehead Fern,not available,not available,not available
-Water Spinach,0.1181,not available,0.414
-Red Cabbage,0.6841,99,0.905
-Celery,1,139.9,0.715
-Leek,0.2857,not available,0.611
-Mango,1.3651,486,0.728
-Papaya,0.2359,61,0.926
-Pomegranate,0.9733,416.59,0.499
-Guava,0.7306,486,1.19
-Coconut,not available,18,2.42
-Orange,0.3333,159,0.678
-Sweet Lime,0.8621,not available,not available
-Watermelon,0.4144,88,0.68
-Bael,0.3666,not available,not available
-Ice Apple,not available,not available,not available
-Java Plum,1.5385,not available,not available
-Litchi,1.4359,not available,0.554
-Jackfruit (Ripe),0.2857,not available,not available
-Grapes,0.4603,184,0.51
-Indian Gooseberry,0.849,not available,not available
-Sapodilla,1.0149,not available,not available
-Cape Gooseberry,6.25,not available,1.63
-Mulberry,1.4706,not available,0.28
-Star Fruit,0.5538,not available,0.554
-Bilimbi,1.2821,not available,not available
-Phalsa / Indian Sherbet Berry,1.4409,not available,not available
-Kaffir Lime / Gondhoraj Lemon,not available,not available,not available
-Pomelo,not available,139,0.33
-Tamarind,not available,not available,0.528
-Elephant Apple,not available,not available,not available
-Karonda,0.8889,not available,not available
-Custard Apple,1.3333,not available,not available
-Bullock's Heart,not available,not available,not available
-Fig,3.2727,1823,0.611
-Date,1.1786,1348,0.5
-Plum,3.0263,610,1.03
-Water Chestnut,not available,not available,not available
-Lotus Seed Pod / Fox Nut Fruit,not available,not available,not available
-Jujube,0.724,not available,not available
-Monstera Deliciosa,not available,not available,not available
-Cashew Apple,not available,155,not available
-Dragon Fruit,0.4599,not available,not available
-Avocado,1.1999,1132,1.55
-Passion Fruit,1.5323,not available,0.938
+"food","land_m2_per_kg","water_used","carbon_footprint","similar_group"
+"Apple","0.63","260","0.43",""
+"Banana","1.93","130","0.86","banana"
+"Barley","1.11","210","1.18",""
+"Beef (beef herd)","326.21","1001","99.48","beef"
+"Beef (dairy herd)","43.24","1001","33.3","beef"
+"Beet Sugar","1.83","329","1.81",""
+"Berries & Grapes","2.41","174","1.53",""
+"Brassicas","0.55","99","0.51",""
+"Cane Sugar","2.04","559","3.2",""
+"Tapioca","1.81","13","1.32",""
+"Cheese","87.79","796","23.88","cheese"
+"Citrus Fruit","0.86","159","0.39",""
+"Coffee","21.62","772","28.53",""
+"Dark Chocolate","68.96","391","46.65",""
+"Eggs","6.27","673","4.67",""
+"Fish (farmed)","0","7800","13.63",""
+"Groundnuts","9.11","448","3.23",""
+"Lamb & Mutton","369.81","598","39.72","lamb"
+"Maize","2.94","275","1.7",""
+"Milk","8.95","158","3.15","milk"
+"Nuts","12.96","2047","0.43",""
+"Oatmeal","7.6","418","2.48",""
+"Onions & Leeks","0.39","153","0.5",""
+"Other Fruit","0.89","240","1.05",""
+"Other Pulses","15.57","875","1.79",""
+"Other Vegetables","0.38","128","0.53",""
+"Peas","7.46","526","0.98",""
+"Pig Meat","17.36","1081","12.31",""
+"Potato","0.88","96","0.46","potato"
+"Poultry Meat","12.22","780","9.87",""
+"Prawns (farmed)","0","2100","26.87","prawns"
+"Rice","2.8","685","4.45",""
+"Root Vegetables","0.33","59","0.43",""
+"Soy milk","0.66","20.6","0.98","milk"
+"Tofu","3.52","127","3.16",""
+"Tomato","0.8","106","2.09",""
+"Wheat & Rye","3.85","549","1.57",""
+"Wine","1.78","262","1.79",""
+"Albacore tuna","0","0","9.38","tuna"
+"Apricot","0.89","594","1.45",""
+"Atlantic herring","0","0","2.68",""
+"Atlantic mackerel","0","0","2.62",""
+"Beetroot","0.33","89","0.408",""
+"Black pepper","3.85","1071","9.4",""
+"Bluefin tuna","0","0","4.98","tuna"
+"Brown crab","0","0","33","crab"
+"Carrot","0.33","89","0.396",""
+"Cauliflower","0.55","96","0.721",""
+"Cherry","0.89","643","1.74",""
+"Chicory (witloof / endive)","0.38","105","0.861",""
+"Clementine","0.86","270","1.3",""
+"Cod family (Gadidae)","0","0","12",""
+"Common sole","0","0","7.48",""
+"Duck","12.22","780","8.06",""
+"Durum wheat","3.85","549","1.23",""
+"European anchovy","0","0","2.51",""
+"Faba bean","15.57","701","0.858",""
+"French Beans","0.38","242","0.447",""
+"Goat meat","369.81","336","41.3","goat"
+"Goat milk","8.95","158","1.52","milk"
+"Grapefruit","0.86","139","0.926",""
+"Great scallop","0","0","9.89",""
+"Hemp seed (grain)","10","429","2.91",""
+"Kiwi","0.89","206","1",""
+"Lettuce","0.38","105","0.868",""
+"Lobster","0","0","41.6","lobster"
+"Lupine","15.57","875","1.1",""
+"Muskmelon","0.89","88","0.979",""
+"Mussels","0","0","5.33",""
+"Oats (grain)","7.6","309","0.953",""
+"Peach","0.89","327","0.591",""
+"Pear","0.89","277","0.387",""
+"Pineapple","0.89","40","1.36",""
+"Quinoa","6.57","570","7.09",""
+"Rabbit","7.67","780","5.78",""
+"Rapeseed","3.1","567","1.25",""
+"Saithe (pollock)","0","0","8.29",""
+"Salmon (farmed)","0","540","5.55",""
+"Sardine (European pilchard)","0","0","2.28",""
+"Sea bass / sea bream (farmed)","0","480","12.3",""
+"Seaweed (Laminaria)","0","0","0.53",""
+"Sheep milk","8.95","158","2.18","milk"
+"Skipjack tuna","0","0","4.95","tuna"
+"Sorghum grain","2.94","190","0.427",""
+"Soybean","15.57","107","1.25",""
+"Strawberry","2.41","146","0.533",""
+"Sugar beet (roots)","0.13","51","0.408",""
+"Sunflower seed","4.2","349","2.91",""
+"Triticale","3.85","549","1.57",""
+"Trout","0","17200","5.68",""
+"Turkey","12.22","780","4.56",""
+"Veal","43.24","1001","22.09",""
+"Walnut","12.96","2113","4.11",""
+"Yellowfin tuna","0","0","4.98","tuna"
+"Zucchini","0.38","108","0.498",""
+"Spinach","0.7327","174","0.423",""
+"Fenugreek Leaves","2.2222","286","0.31",""
+"Mustard Greens","0.1429","340","0.32",""
+"Amaranth Leaves","1","235","0.507",""
+"Coriander Leaves","4.0161","295","1.03",""
+"Mint Leaves","5","410","0.735",""
+"Curry Leaves","0.5","310","0.26",""
+"Dill Leaves","0.9349","305","0.879",""
+"Sorrel Leaves","0.38","280","0.29",""
+"Colocasia Leaves","0.16","435","0.42",""
+"Onion","0.6206","153","0.421",""
+"Garlic","1.845","251","0.383",""
+"Ginger","2.0305","132","0.494",""
+"Radish","0.6962","260","0.384",""
+"Sweet Potato","0.9743","58","0.334","sweet potato"
+"Taro Root","1.1111","18","0.69",""
+"Elephant Foot Yam","0.2252","390","0.39",""
+"Bottle Gourd","0.5662","315","0.37",""
+"Bitter Gourd","0.9789","98.5","0.40",""
+"Ridge Gourd","0.6897","325","0.38",""
+"Sponge Gourd","0.6849","330","0.39",""
+"Snake Gourd","0.5556","320","0.37",""
+"Pointed Gourd","0.7692","305","0.31",""
+"Ivy Gourd","0.3724","270","0.24",""
+"Apple Gourd","1","235","0.28",""
+"Ash Gourd","0.3077","190","0.21",""
+"Pumpkin","0.4808","108","0.639",""
+"Cucumber","0.6342","147","0.512",""
+"Spine Gourd","1.8182","340","0.38",""
+"Okra","0.8399","101","0.47",""
+"Green Peas","1.1217","213","0.702",""
+"Cluster Beans","1.6667","548.7","0.19",""
+"Hyacinth Beans","1.1111","215","0.22",""
+"Drumstick","0.3259","140","0.13",""
+"Cowpeas","2","185","0.18",""
+"Broad Beans","0.5714","195","0.858",""
+"Winged Beans","0.9091","210","0.21",""
+"Eggplant","0.5244","128","0.472",""
+"Green Chili","0.8299","139","0.715",""
+"Capsicum","1.7964","139","0.715",""
+"Cabbage","0.4425","99","0.762",""
+"Broccoli","0.625","96","0.951",""
+"Kohlrabi","0.4444","99","0.494",""
+"Turnip","0.2857","89","0.396",""
+"Plantain","0.1753","33","0.76",""
+"Raw Papaya","0.18","265","0.23",""
+"Raw Mango","0.67","290","0.16",""
+"Jackfruit (Unripe)","0.29","170","0.11",""
+"Lemon","0.5","210","0.764",""
+"Mushroom","0.02","25","0.27",""
+"Spring Onion","0.38","95","0.739",""
+"Sweet Corn","0.9683","245","0.63",""
+"Baby Corn","1.25","310","0.42",""
+"Lotus Root","0.42","780","0.41",""
+"Banana Stem","0.05","65","0.08",""
+"Banana Flower","0.06","75","0.09",""
+"Indian Hog Plum","0.55","245","0.14",""
+"Fiddlehead Fern","1.85","15","0.05",""
+"Water Spinach","0.1181","540","0.414",""
+"Red Cabbage","0.6841","99","0.905",""
+"Celery","1","139.9","0.715",""
+"Leek","0.2857","260","0.611",""
+"Mango","1.3651","486","0.728",""
+"Papaya","0.2359","61","0.926",""
+"Pomegranate","0.9733","416.59","0.499",""
+"Guava","0.7306","486","1.19",""
+"Coconut","0.5","18","2.42",""
+"Orange","0.3333","159","0.678",""
+"Sweet Lime","0.8621","360","0.25",""
+"Watermelon","0.4144","88","0.68",""
+"Bael","0.3666","120","0.12",""
+"Ice Apple","0.74","85","0.08",""
+"Java Plum","1.5385","215","0.13",""
+"Litchi","1.4359","420","0.554",""
+"Jackfruit (Ripe)","0.2857","210","0.14",""
+"Grapes","0.4603","184","0.51",""
+"Indian Gooseberry","0.849","160","0.15",""
+"Sapodilla","1.0149","295","0.18",""
+"Cape Gooseberry","6.25","210","0.27",""
+"Mulberry","1.4706","240","0.28",""
+"Star Fruit","0.5538","315","0.554",""
+"Bilimbi","1.2821","280","0.14",""
+"Phalsa / Indian Sherbet Berry","1.4409","240","0.25",""
+"Kaffir Lime / Gondhoraj Lemon","1.8","390","0.38",""
+"Pomelo","0.25","139","0.33",""
+"Tamarind","0.75","190","0.528",""
+"Elephant Apple","0.4","150","0.12",""
+"Karonda","0.8889","210","0.22",""
+"Custard Apple","1.3333","310","0.28",""
+"Bullock's Heart","1.1","360","0.31",""
+"Fig","3.2727","1823","0.611",""
+"Date","1.1786","1348","0.5",""
+"Plum","3.0263","610","1.03",""
+"Water Chestnut","0.80","450","0.26",""
+"Lotus Seed Pod / Fox Nut Fruit","1.2","480","0.22",""
+"Jujube","0.724","280","0.24",""
+"Monstera Deliciosa","4.8","520","0.42",""
+"Cashew Apple","0.30","155","0.14",""
+"Dragon Fruit","0.4599","290","0.36",""
+"Avocado","1.1999","1132","1.55",""
+"Passion Fruit","1.5323","380","0.938",""
+"Oreo biscuits","2.5","4.5","500",""
+"Maggie masala noodles","1.8","2.8","650",""
+"Kurkure","1.6","3.5","1100",""
+"Dairy milk","12.0","450","6.5",""
+"Bread","2.0","305","1.0",""
+"Kitkat","9.0","400","5.0",""
+"5 Star","10.0","420","5.5",""
+"Munch","8.0","380","4.5",""
+"Bakery cake","6.0","450","3.5",""
+"Hide and seek","4.5","400","2.5",""
+"Good day","3.5","450","2.0",""
+"Popcorn","1.8","120","1.2",""
+"Mixture","4.0","650","2.5",""
+"Aloo bhujia","4.5","600","2.5",""
+"Marie gold biscuits","2.5","350","1.5",""
+"onion samosa","2.7","930","1.97","samosa"
+"aloo samosa","2.1","590","1.54","samosa"
+"aloo tikki","1.8","490","1.28",""
+"vegetable cutlet","2.2","680","1.45",""
+"potato chips","2.4","620","2.35",""
+"bread pakora","3.4","920","1.95",""
+"onion pakora","2.9","890","1.78",""
+"aloo paratha","3.1","860","1.48",""
+"vegetable paratha","3.4","940","1.65",""
+"plain roti","3.8","1020","1.25",""
+"veg puff","3.8","1060","2.1",""
+"paneer puff","7.9","2120","5.35",""
+"veg spring roll","2.6","790","1.55",""
+"hara bhara kebab","3.2","890","1.85",""
+"dhokla","4.2","1180","1.42",""
+"khandvi","4.5","1240","1.58",""
+"steamed idli","2.1","1320","1.15",""
+"medu vada","4.8","1410","1.76",""
+"veg momos","2.3","740","1.25","momos"
+"fried veg momos","2.6","820","1.58","momos"
+"beef(grass fed)","320","15400","40","beef"
+"beef(grass fed dairy herd)","45","7500","26.5","beef"
+"Lamb (grass-fed)","370","12200","39.5","lamb"
+"Goat (grass-fed)","340","11800","37.8","goat"
+"Veal (grass-fed)","38","6800","21.4",""
+"Reduced-fat cheese","20.5","5200","21.2","cheese"
+"Milk Chocolate","14.3","3850","11.2",""
+"Decaffeinated coffee","22.4","2750","29.8",""
+"Prawns (wild-caught)","0","3200","26.8","prawns"
+"Spiny lobster","0","2900","19.44","lobster"
+"Blue crab","0","2650","14.8","crab"
+"Rainbow trout","2.1","1840","5.1",""
+"Fish (wild-caught)","0","2100","5.4",""
+"Pork (lean)","12.4","4800","7.9",""
+"Chicken (free-range)","15.2","4100","6.1",""
+"Duck (free-range)","19.4","5400","7.8",""
+"Skimmed milk","2.1","640","1.35","milk"
+"Pecan","12.8","9200","1.62",""
+"Crab apple","0.80","410","0.28",""
+"Red banana","1.15","840","0.62","banana"
+"Green mango","1.1","720","0.34",""
+"Blood Orange","0.70","560","0.39",""
+"Raisins","2.6","1650","1.45",""
+"Raspberry","0.65","410","1.25",""
+"Honeydew melon","0.25","240","0.36",""
+"Pawpaw","0.85","430","0.30",""
+"Coconut meat","3.10","1280","0.58",""
+"Parsnips","0.32","260","0.42",""
+"Brussels sprouts","0.35","290","0.48",""
+"Pickling Cucumber","0.28","220","0.38",""
+"Purple Potatoes","0.22","230","0.26","potato"
+"Purple sweet potato","0.24","270","0.29","sweet potato"
+"Snow peas","0.55","340","0.46",""
+"Runner beans","0.60","380","0.42",""
+"Romanesco","0.36","310","0.50",""
