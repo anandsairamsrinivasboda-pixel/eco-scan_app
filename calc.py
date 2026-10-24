@@ -18,6 +18,13 @@ UNIT_TO_KG = {
     "oz": 0.028349523125,
     "ounce": 0.028349523125,
     "ounces": 0.028349523125,
+    # Liquid volumes use the requested density assumption of 1 kg per litre.
+    # This lets quantities such as "1 L" use the per-kg rates in data.csv.
+    "l": 1.0,
+    "liter": 1.0,
+    "liters": 1.0,
+    "litre": 1.0,
+    "litres": 1.0,
 }
 
 # These units mean the customer gave a count, not a weight.
@@ -294,7 +301,14 @@ def calculate_impact(products, environmental_data):
         raise ValueError("A printed quantity could not be read. Please upload a clearer bill.")
 
     missing_quantities = items["Quantity"].isna()
-    per_kg_mode = bool(missing_quantities.all() and quantity_status.eq("absent").all())
+    # An amount without a unit is retained by vision.py as an item count.
+    # Use the established 1 kg-per-food fallback for the entire bill rather
+    # than mixing guessed counts with measured quantities.
+    unitless_count_mode = quantity_status.eq("unitless_count").any()
+    per_kg_mode = bool(
+        unitless_count_mode
+        or (missing_quantities.all() and quantity_status.eq("absent").all())
+    )
     if per_kg_mode:
         items["Quantity"] = 1.0
         items["Unit"] = "kg"
@@ -330,7 +344,7 @@ def calculate_impact(products, environmental_data):
         raise ValueError(
             "Unsupported unit(s): "
             + ", ".join(str(unit) for unit in bad_units)
-            + ". Use kg, g, lb, oz, or pieces with a per-item weight."
+            + ". Use kg, g, lb, oz, litres (L), or pieces with a per-item weight."
         )
 
     items["Quantity_kg"] = 0.0
@@ -376,7 +390,7 @@ def calculate_impact(products, environmental_data):
         raise ValueError(
             "Unsupported per-item weight unit(s): "
             + ", ".join(str(unit) for unit in bad_units)
-            + ". Use kg, g, lb, or oz."
+            + ". Use kg, g, lb, oz, or litres (L)."
         )
 
     # Counted foods: number of items × weight per item × kg conversion.
