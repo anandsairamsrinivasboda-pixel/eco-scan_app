@@ -166,14 +166,24 @@ def validate_and_match_rows(rows, food_names, similar_products_by_food=None):
                 )
             weight_unit = weight_unit.strip().casefold() or None
 
-        # A printed number with no unit is retained as a count, not guessed as a mass.
-        # calc.py uses its per-kg fallback for the whole receipt in this case.
-        if quantity is not None and unit is None:
+        # Reconcile Gemini's status with the extracted units. A valid
+        # mass/volume unit must not be downgraded by an inconsistent label.
+        count_units = {"piece", "pieces", "each", "item", "items", "pc", "pcs"}
+        if unit in {"pc", "pcs", "piece", "each", "item", "items", "count", "counts"}:
             unit = "pieces"
-            quantity_status = "unitless_count"
+        if quantity is not None:
+            if unit is None:
+                unit = "pieces"
+                quantity_status = "unitless_count"
+            elif unit in count_units and weight_per_item is not None and weight_unit is None:
+                quantity_status = "unitless_count"
+            else:
+                quantity_status = "present"
+        elif quantity_status != "unreadable":
+            quantity_status = "absent"
+
         if weight_per_item is not None and weight_unit is None:
             weight_per_item = None
-            quantity_status = "unitless_count"
         confidence = row.get("confidence", "low")
         if confidence not in {"high", "medium", "low"}:
             confidence = "low"
