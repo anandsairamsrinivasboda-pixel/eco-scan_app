@@ -364,7 +364,7 @@ elif st.session_state.page == "dashboard":
 
     head_col, anim_col = st.columns([3, 1])
     with head_col:
-        st.title("🌱 EcoScan: Receipt Footprint Tracker")
+        st.title("🌱 EcoScan: Your Meal's Footprint Tracker")
         st.caption("Upload or capture a receipt to analyze Carbon (CO₂), Water, and Land metrics.")
     with anim_col:
         if lottie_tree:
