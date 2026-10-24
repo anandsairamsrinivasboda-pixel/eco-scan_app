@@ -304,7 +304,28 @@ def calculate_impact(products, environmental_data):
     # An amount without a unit is retained by vision.py as an item count.
     # Use the established 1 kg-per-food fallback for the entire bill rather
     # than mixing guessed counts with measured quantities.
-    unitless_count_mode = quantity_status.eq("unitless_count").any()
+    unit_keys_for_status = items["Unit"].astype(str).str.strip().str.casefold()
+    has_explicit_mass_or_volume_unit = unit_keys_for_status.isin(UNIT_TO_KG)
+    count_rows_for_fallback = unit_keys_for_status.isin(COUNT_UNITS)
+    weight_values_for_fallback = pd.to_numeric(
+        items["Weight_per_item"], errors="coerce"
+    )
+    weight_units_for_fallback = (
+        items["Weight_unit"].astype("string").str.strip().str.casefold()
+    )
+    missing_count_weight = count_rows_for_fallback & (
+        weight_values_for_fallback.isna()
+        | (weight_values_for_fallback <= 0)
+        | weight_units_for_fallback.isna()
+        | weight_units_for_fallback.eq("")
+    )
+    unitless_count_mode = (
+        (
+            quantity_status.eq("unitless_count")
+            & ~has_explicit_mass_or_volume_unit
+        ).any()
+        or missing_count_weight.any()
+    )
     per_kg_mode = bool(
         unitless_count_mode
         or (missing_quantities.all() and quantity_status.eq("absent").all())
