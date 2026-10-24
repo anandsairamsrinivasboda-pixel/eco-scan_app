@@ -3,4 +3,4 @@ pandas
 plotly
 streamlit-lottie
 requests
-
+google-genai
