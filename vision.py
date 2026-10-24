@@ -23,7 +23,7 @@ RECEIPT_SCHEMA = {
             "unit": {"type": ["string", "null"]},
             "quantity_status": {
                 "type": "string",
-                "enum": ["present", "absent", "unreadable"],
+                "enum": ["present", "absent", "unreadable", "unitless_count"],
             },
             "weight_per_item": {"type": ["number", "null"]},
             "weight_unit": {"type": ["string", "null"]},
@@ -144,7 +144,7 @@ def validate_and_match_rows(rows, food_names, similar_products_by_food=None):
 
         quantity = _optional_number(row.get("quantity"), "quantity", row_number)
         quantity_status = row.get("quantity_status")
-        if quantity_status not in {"present", "absent", "unreadable"}:
+        if quantity_status not in {"present", "absent", "unreadable", "unitless_count"}:
             quantity_status = "absent" if quantity is None else "present"
         weight_per_item = _optional_number(
             row.get("weight_per_item"), "weight_per_item", row_number
@@ -166,6 +166,14 @@ def validate_and_match_rows(rows, food_names, similar_products_by_food=None):
                 )
             weight_unit = weight_unit.strip().casefold() or None
 
+        # A printed number with no unit is retained as a count, not guessed as a mass.
+        # calc.py uses its per-kg fallback for the whole receipt in this case.
+        if quantity is not None and unit is None:
+            unit = "pieces"
+            quantity_status = "unitless_count"
+        if weight_per_item is not None and weight_unit is None:
+            weight_per_item = None
+            quantity_status = "unitless_count"
         confidence = row.get("confidence", "low")
         if confidence not in {"high", "medium", "low"}:
             confidence = "low"
@@ -233,11 +241,16 @@ For each food line:
   near-name equivalent. Copy the category exactly from the list. For example,
   red apple can match Apple if Apple is listed.
 - If there is no safe match, set match to null. Do not force a different food.
-- Read quantity and unit from the bill. If no amount or item count is printed,
-  set quantity=null, unit=null, and quantity_status="absent". If a number is
-  printed but unreadable, set quantity=null, unit=null, and
-  quantity_status="unreadable". If a quantity/count is printed, set
-  quantity_status="present". Never assume 1 and never invent a weight.
+- Read quantities and units exactly as printed. If no amount or item count is
+  printed, set quantity=null, unit=null, and quantity_status="absent". If a
+  number is printed but unreadable, set quantity=null, unit=null, and
+  quantity_status="unreadable". Never assume 1 and never invent a weight.
+- If a readable number is printed with no unit, preserve it as an item count:
+  set unit="pieces" and quantity_status="unitless_count"; leave per-item weight
+  fields null. If a per-item weight number is visible but its unit is missing,
+  leave both per-item fields null and set quantity_status="unitless_count".
+- For other readable quantities with explicit units, set
+  quantity_status="present".
 - Return common mass units in standard form: kg, g, lb, or oz. For example,
   normalize gm, gram, and grams to g.
 - For 3 apples, 500 g each: quantity=3, unit=pieces,
