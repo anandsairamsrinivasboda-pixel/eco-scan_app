@@ -43,29 +43,60 @@ def _report_value(value, digits=3):
     return f"{float(value):,.{digits}f}"
 
 
+def _format_per_kg_value(value):
+    """Display a CSV impact rate without rounding its stored value."""
+    if pd.isna(value):
+        return "Unavailable"
+    return format(float(value), ".15g")
+
+
 def format_report(summary):
     """Return the customer-facing report in the requested text layout."""
     table = summary["report_table"]
-    lines = [
-        "Food name | Water usage (L) | Land usage (m²) | Carbon footprint (kg CO₂)",
-        "----------|-----------------|----------------|--------------------------",
-    ]
+    per_kg_mode = summary.get("per_kg_mode", False)
+    if per_kg_mode:
+        lines = [
+            "Food name (per kg) | Water usage (L/kg) | Land usage (m²/kg) | Carbon footprint (kg CO₂e/kg)",
+            "-------------------|--------------------|--------------------|----------------------------------",
+        ]
+    else:
+        lines = [
+            "Food name | Water usage (L) | Land usage (m²) | Carbon footprint (kg CO₂)",
+            "----------|-----------------|----------------|--------------------------",
+        ]
 
     for _, row in table.iterrows():
-        lines.append(
-            f"{row['Food name']} | "
-            f"{_report_value(row['Water usage (L)'])} | "
-            f"{_report_value(row['Land usage (m²)'], 4)} | "
-            f"{_report_value(row['Carbon footprint (kg CO₂)'], 4)}"
-        )
+        if per_kg_mode:
+            lines.append(
+                f"{row['Food name']} | "
+                f"{_format_per_kg_value(row['Water usage (L/kg)'])} | "
+                f"{_format_per_kg_value(row['Land usage (m²/kg)'])} | "
+                f"{_format_per_kg_value(row['Carbon footprint (kg CO₂e/kg)'])}"
+            )
+        else:
+            lines.append(
+                f"{row['Food name']} | "
+                f"{_report_value(row['Water usage (L)'])} | "
+                f"{_report_value(row['Land usage (m²)'], 4)} | "
+                f"{_report_value(row['Carbon footprint (kg CO₂)'], 4)}"
+            )
 
     totals = summary["totals"]
-    lines.extend([
-        "",
-        f"Total land usage: {_format_report_total(totals['land'])}",
-        f"Total water usage: {_format_report_total(totals['water'])}",
-        f"Total carbon footprint: {_format_report_total(totals['carbon'])}",
-    ])
+    if per_kg_mode:
+        lines.extend([
+            "",
+            f"Total land usage (sum of listed foods at 1 kg each): {_format_report_total(totals['land'])}",
+            f"Total water usage (sum of listed foods at 1 kg each): {_format_report_total(totals['water'])}",
+            f"Total carbon footprint (sum of listed foods at 1 kg each): {_format_report_total(totals['carbon'])}",
+        ])
+    else:
+        lines.extend([
+            "",
+            f"Total land usage: {_format_report_total(totals['land'])}",
+            f"Total water usage: {_format_report_total(totals['water'])}",
+            f"Total carbon footprint: {_format_report_total(totals['carbon'])}",
+        ])
+    lines.append("")
 
     phrases = {
         "land": "consumes most of land in your bill",
@@ -88,24 +119,43 @@ def format_report(summary):
         else:
             percentage_text = f"{percentage:.2f}% of {basis}"
 
-        lines.append(
-            f"{contributor['food']} {phrases[measure]}: {percentage_text}"
-        )
+        if per_kg_mode:
+            per_kg_phrases = {
+                "land": "has the highest land use per kg among the listed foods",
+                "water": "has the highest water use per kg among the listed foods",
+                "carbon": "has the highest carbon footprint per kg among the listed foods",
+            }
+            percentage_text = percentage_text.replace("of total", "of combined per-kg values")
+            percentage_text = percentage_text.replace("of known subtotal", "of known combined per-kg values")
+            lines.append(
+                f"{contributor['food']} {per_kg_phrases[measure]}: {percentage_text}"
+            )
+        else:
+            lines.append(
+                f"{contributor['food']} {phrases[measure]}: {percentage_text}"
+            )
 
     if summary.get("suggestions"):
         lines.extend(["", "Suggestions:"])
         labels = {
-            "land": "land usage",
-            "water": "water consumption",
+            "land": "land use",
+            "water": "water use",
             "carbon": "carbon footprint",
         }
         for suggestion in summary["suggestions"]:
             label = labels[suggestion["measure"]]
-            lines.append(
-                f"For better {label}, you can prefer {suggestion['alternative']} "
-                f"instead of {suggestion['food']}, which could reduce {label} "
-                f"by {suggestion['reduction_percent']:.2f}% for the same quantity."
-            )
+            if per_kg_mode:
+                lines.append(
+                    f"For better {label} per kg, you can prefer {suggestion['alternative']} "
+                    f"instead of {suggestion['food']}, which could reduce {label} "
+                    f"by {suggestion['reduction_percent']:.2f}% at 1 kg of each food."
+                )
+            else:
+                lines.append(
+                    f"For better {label}, you can prefer {suggestion['alternative']} "
+                    f"instead of {suggestion['food']}, which could reduce {label} "
+                    f"by {suggestion['reduction_percent']:.2f}% for the same quantity."
+                )
 
     return "\n".join(lines)
 
@@ -226,11 +276,35 @@ def calculate_impact(products, environmental_data):
         ):
             raise ValueError(f"A food name is missing from the {label}.")
 
-    # Convert the receipt quantities to numbers.
+    # A bill with no printed amounts is reported as a per-kg comparison using
+    # the exact impact rates from the CSV. Mixed or unreadable amounts stop
+    # here so the report never combines incomparable units.
     items["Quantity"] = pd.to_numeric(items["Quantity"], errors="coerce")
+    if "quantity_status" in items.columns:
+        quantity_status = items["quantity_status"].astype("string").str.strip().str.casefold()
+        quantity_status = quantity_status.fillna("")
+        quantity_status = quantity_status.mask(quantity_status.eq(""), "absent")
+    else:
+        quantity_status = pd.Series(
+            ["absent" if pd.isna(value) else "present" for value in items["Quantity"]],
+            index=items.index,
+        )
 
-    if items["Quantity"].isna().any():
-        raise ValueError("A quantity is missing or is not a valid number.")
+    if quantity_status.eq("unreadable").any():
+        raise ValueError("A printed quantity could not be read. Please upload a clearer bill.")
+
+    missing_quantities = items["Quantity"].isna()
+    per_kg_mode = bool(missing_quantities.all() and quantity_status.eq("absent").all())
+    if per_kg_mode:
+        items["Quantity"] = 1.0
+        items["Unit"] = "kg"
+    elif missing_quantities.any():
+        foods = items.loc[missing_quantities, "Product"].tolist()
+        raise ValueError(
+            "Some food quantities are missing while others are present. "
+            "Please provide readable quantities for all foods or upload a bill with no quantities. "
+            "Missing for: " + ", ".join(foods)
+        )
 
     if (items["Quantity"] < 0).any():
         raise ValueError("Food quantities cannot be negative.")
@@ -404,26 +478,44 @@ def calculate_impact(products, environmental_data):
 
     # Combine duplicate receipt lines for the same food.
     # min_count=1 keeps missing impacts missing instead of turning them into zero.
-    by_food = result.groupby("Product_key", as_index=False).agg(
-        Product=("Product", "first"),
-        Quantity_kg=("Quantity_kg", "sum"),
-        CO2_total_kg=("CO2_total_kg", lambda values: values.sum(min_count=1)),
-        Water_total_litres=(
-            "Water_total_litres",
-            lambda values: values.sum(min_count=1),
-        ),
-        Land_total_m2=(
-            "Land_total_m2",
-            lambda values: values.sum(min_count=1),
-        ),
-    )
+    if per_kg_mode:
+        # A no-quantity report compares each unique detected food at a 1 kg
+        # reference amount, so duplicate receipt lines do not double-count it.
+        by_food = result.groupby("Product_key", as_index=False).agg(
+            Product=("Product", "first"),
+            Quantity_kg=("Quantity_kg", "first"),
+            CO2_total_kg=("CO2_total_kg", "first"),
+            Water_total_litres=("Water_total_litres", "first"),
+            Land_total_m2=("Land_total_m2", "first"),
+        )
+    else:
+        by_food = result.groupby("Product_key", as_index=False).agg(
+            Product=("Product", "first"),
+            Quantity_kg=("Quantity_kg", "sum"),
+            CO2_total_kg=("CO2_total_kg", lambda values: values.sum(min_count=1)),
+            Water_total_litres=(
+                "Water_total_litres",
+                lambda values: values.sum(min_count=1),
+            ),
+            Land_total_m2=(
+                "Land_total_m2",
+                lambda values: values.sum(min_count=1),
+            ),
+        )
 
     # Calculate totals and find the highest-contributing food for each measure.
-    measures = {
-        "carbon": ("CO2_total_kg", "CO2_kg_per_kg", "kg CO2e"),
-        "water": ("Water_total_litres", "Water_litres_per_kg", "litres"),
-        "land": ("Land_total_m2", "Land_m2_per_kg", "m²"),
-    }
+    if per_kg_mode:
+        measures = {
+            "carbon": ("CO2_total_kg", "CO2_kg_per_kg", "kg CO₂e/kg"),
+            "water": ("Water_total_litres", "Water_litres_per_kg", "L/kg"),
+            "land": ("Land_total_m2", "Land_m2_per_kg", "m²/kg"),
+        }
+    else:
+        measures = {
+            "carbon": ("CO2_total_kg", "CO2_kg_per_kg", "kg CO2e"),
+            "water": ("Water_total_litres", "Water_litres_per_kg", "litres"),
+            "land": ("Land_total_m2", "Land_m2_per_kg", "m²"),
+        }
 
     totals = {}
     highest_contributors = {}
@@ -520,11 +612,16 @@ def calculate_impact(products, environmental_data):
         "totals": totals,
         "highest_contributors": highest_contributors,
         "suggestions": suggestions,
+        "per_kg_mode": per_kg_mode,
     }
 
     # Customer-facing table in the exact column order requested. Keep the
     # detailed `result` DataFrame and existing summary fields for app.py use.
     def report_food_name(row):
+        # No-quantity receipts show each unique food as a 1 kg reference.
+        if per_kg_mode:
+            return f"{row['Product']} (per kg)"
+
         # Show the combined purchased amount beside the food name.
         quantity_kg = float(row["Quantity_kg"])
         if abs(quantity_kg - round(quantity_kg)) < 1e-10:
@@ -541,20 +638,37 @@ def calculate_impact(products, environmental_data):
 
     report_foods = by_food.copy()
     report_foods["Food name"] = report_foods.apply(report_food_name, axis=1)
-    summary["report_table"] = by_food[[
-        "Product",
-        "Water_total_litres",
-        "Land_total_m2",
-        "CO2_total_kg",
-    ]].rename(columns={
-        "Water_total_litres": "Water usage (L)",
-        "Land_total_m2": "Land usage (m²)",
-        "CO2_total_kg": "Carbon footprint (kg CO₂)",
-    })
+    if per_kg_mode:
+        summary["report_table"] = by_food[[
+            "Product",
+            "Water_total_litres",
+            "Land_total_m2",
+            "CO2_total_kg",
+        ]].rename(columns={
+            "Water_total_litres": "Water usage (L/kg)",
+            "Land_total_m2": "Land usage (m²/kg)",
+            "CO2_total_kg": "Carbon footprint (kg CO₂e/kg)",
+        })
+    else:
+        summary["report_table"] = by_food[[
+            "Product",
+            "Water_total_litres",
+            "Land_total_m2",
+            "CO2_total_kg",
+        ]].rename(columns={
+            "Water_total_litres": "Water usage (L)",
+            "Land_total_m2": "Land usage (m²)",
+            "CO2_total_kg": "Carbon footprint (kg CO₂)",
+        })
     summary["report_table"]["Food name"] = report_foods["Food name"].to_numpy()
-    summary["report_table"] = summary["report_table"][
-        ["Food name", "Water usage (L)", "Land usage (m²)", "Carbon footprint (kg CO₂)"]
-    ]
+    if per_kg_mode:
+        summary["report_table"] = summary["report_table"][
+            ["Food name", "Water usage (L/kg)", "Land usage (m²/kg)", "Carbon footprint (kg CO₂e/kg)"]
+        ]
+    else:
+        summary["report_table"] = summary["report_table"][
+            ["Food name", "Water usage (L)", "Land usage (m²)", "Carbon footprint (kg CO₂)"]
+        ]
     summary["report_text"] = format_report(summary)
 
     return result, summary
