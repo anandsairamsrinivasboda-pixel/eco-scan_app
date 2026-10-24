@@ -5,11 +5,11 @@ from pathlib import Path
 
 import pandas as pd
 
-MODEL_NAME = "gemini-2.5-flash"
+MODEL_NAME = "gemini-3.8-flash"
 MAX_FILE_BYTES = 50 * 1024 * 1024
 OUTPUT_COLUMNS = [
     "item", "match", "quantity", "unit",
-    "weight_per_item", "weight_unit", "confidence",
+    "weight_per_item", "weight_unit", "confidence", "similar_products",
 ]
 
 RECEIPT_SCHEMA = {
@@ -79,8 +79,39 @@ def _optional_number(value, field_name, row_number):
     return float(value)
 
 
-def validate_and_match_rows(rows, food_names):
-    """Validate rows and canonicalize each suggested match to a CSV name."""
+def _build_similar_products_by_food(environmental_data):
+    """Build only database-approved alternatives sharing a similarity group."""
+    if not isinstance(environmental_data, pd.DataFrame):
+        return {}
+
+    columns = {str(column).strip().casefold(): column for column in environmental_data.columns}
+    food_column = columns.get("food")
+    group_column = columns.get("similar_group")
+    if food_column is None or group_column is None:
+        return {}
+
+    grouped_names = {}
+    for _, row in environmental_data[[food_column, group_column]].iterrows():
+        food = row[food_column]
+        group = row[group_column]
+        if pd.isna(food) or pd.isna(group):
+            continue
+        food = str(food).strip()
+        group = str(group).strip().casefold()
+        if food and group:
+            grouped_names.setdefault(group, []).append(food)
+
+    alternatives = {}
+    for names in grouped_names.values():
+        for food in names:
+            alternatives[food.casefold()] = [
+                other for other in names if other.casefold() != food.casefold()
+            ]
+    return alternatives
+
+
+def validate_and_match_rows(rows, food_names, similar_products_by_food=None):
+    """Validate CSV matches and attach their database-approved alternatives."""
     if not isinstance(rows, list):
         raise ValueError("Gemini's response must be a JSON list.")
 
@@ -117,6 +148,8 @@ def validate_and_match_rows(rows, food_names):
             if not isinstance(unit, str):
                 raise ValueError(f"Receipt row {row_number}: unit must be text or null.")
             unit = unit.strip().casefold() or None
+            if unit in {"gm", "gms", "gram", "grams"}:
+                unit = "g"
 
         weight_unit = row.get("weight_unit")
         if weight_unit is not None:
@@ -138,6 +171,13 @@ def validate_and_match_rows(rows, food_names):
             "weight_per_item": weight_per_item,
             "weight_unit": weight_unit,
             "confidence": confidence,
+            # Candidates come from the CSV's explicit group, never from
+            # substring matching or an unverified model guess.
+            "similar_products": (
+                list((similar_products_by_food or {}).get(match.casefold(), []))
+                if match
+                else []
+            ),
         })
 
     return pd.DataFrame(cleaned_rows, columns=OUTPUT_COLUMNS)
@@ -147,12 +187,22 @@ def parse_receipt(file, food_names, client=None):
     """Extract foods from a receipt image/PDF and match them to CSV names.
 
     file can be a path, Streamlit uploader result, or camera_input result.
-    food_names should be the values from the CSV food column.
+    Pass the full CSV DataFrame to attach alternatives from its similar_group
+    column. Passing only food names keeps older callers working without advice.
     The returned DataFrame has OUTPUT_COLUMNS and does not calculate impacts.
     """
     if food_names is None:
-        raise ValueError("Pass the food names from data.csv to this function.")
-    food_names = list(food_names)
+        raise ValueError("Pass data.csv or its food-name column to this function.")
+
+    similar_products_by_food = _build_similar_products_by_food(food_names)
+    if isinstance(food_names, pd.DataFrame):
+        columns = {str(column).strip().casefold(): column for column in food_names.columns}
+        food_column = columns.get("food")
+        if food_column is None:
+            raise ValueError("The database must contain a 'food' column.")
+        food_names = food_names[food_column].tolist()
+    else:
+        food_names = list(food_names)
     if not food_names:
         raise ValueError("The CSV food-name list is empty.")
 
@@ -175,7 +225,11 @@ For each food line:
   near-name equivalent. Copy the category exactly from the list. For example,
   red apple can match Apple if Apple is listed.
 - If there is no safe match, set match to null. Do not force a different food.
-- Read quantity and unit from the bill. Never invent a quantity or weight.
+- Read quantity and unit from the bill. If a food line has no quantity number
+  printed, assume quantity=1. If a printed number is present but unreadable,
+  set quantity=null. Never invent a weight.
+- Return common mass units in standard form: kg, g, lb, or oz. For example,
+  normalize gm, gram, and grams to g.
 - For 3 apples, 500 g each: quantity=3, unit=pieces,
   weight_per_item=500, weight_unit=g.
 - For apples, 500 g total: quantity=500, unit=g, and both per-item fields=null.
@@ -208,5 +262,7 @@ Allowed CSV food categories:
     except json.JSONDecodeError as error:
         raise ValueError("Gemini returned invalid JSON for the receipt.") from error
 
-    return validate_and_match_rows(rows, food_names)
+    return validate_and_match_rows(
+        rows, food_names, similar_products_by_food=similar_products_by_food
+    )
 
